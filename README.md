@@ -9,7 +9,12 @@ fully on-device. No cloud, no telemetry, no per-call fees. A wake word here is a
 Heed is Apache-2.0 licensed, so commercial and closed-source use are fine, with no
 copyleft.
 
-Try it with no install: [train your own in Colab](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb), or run the static [browser demo](https://github.com/AndreiBulzan/heed-wakeword/tree/main/examples/inference_browser).
+Try it with no install. Train in Colab on a free GPU, either the
+[quick generic trainer](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb)
+(type a phrase, done) or the
+[train-on-your-own-voice notebook](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_your_voice_colab.ipynb)
+(record or upload a few clips, then test it in the notebook). Or run the static
+[browser demo](https://github.com/AndreiBulzan/heed-wakeword/tree/main/examples/inference_browser).
 
 ## Two ways to use it
 
