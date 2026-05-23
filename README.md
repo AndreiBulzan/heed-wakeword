@@ -172,6 +172,13 @@ GPU offload to beat the data-transfer cost. The one place a GPU pays off is TTS
 synthesis during training. See the install notes for the optional
 `onnxruntime-gpu` swap.
 
+## Documentation
+
+Deeper guides for each tool live in [`docs/`](docs/): the
+[studio UI](docs/studio.md), [export and deploy](docs/export-and-deploy.md),
+[Colab](docs/colab.md), [Docker](docs/docker.md), [mobile](docs/mobile.md), and
+[browser and JS](docs/browser-and-js.md).
+
 ## Roadmap
 
 Working today: custom training (studio and CLI), GPU and CPU, multi-speaker TTS,
@@ -179,13 +186,12 @@ cross-speaker eval, ONNX and TFLite export with verified equivalence, browser an
 iOS and Android inference, live multi-word switching, a zero-install Colab
 trainer, a static client-side browser demo, and a Docker studio image.
 
-Planned: a curated pretrained pack of generic phrases (`heed download-pack`);
-reference preprocessing in more languages, or the preprocessing folded into the
-model graph so raw audio goes straight in; and embedded targets such as
-TFLite-Micro.
+Ideas for later, not promises: a curated pretrained pack of generic phrases, more
+reference preprocessing ports, folding the preprocessing into the model graph so
+raw audio can go straight in, and embedded targets such as TFLite-Micro. Whether
+any of these land depends on interest and time.
 
-This is v0.1. The list above is honest about what runs today and what is still
-ahead.
+This is v0.1. The "working today" list is the honest scope.
 
 ## License
 
