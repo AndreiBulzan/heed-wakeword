@@ -1,0 +1,85 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+build/
+dist/
+.eggs/
+pip-wheel-metadata/
+
+# --- virtual envs ---
+.venv/
+venv/
+env/
+.env/
+ENV/
+
+# --- testing / linting caches ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- heed user-project data ---
+# Each `heed init <name>` creates a project directory next to the heed/
+# package. The dirs and files below are user-generated (recordings, trained
+# models, TTS cache, etc.) and must NEVER end up in the repo.
+*/positive/
+*/negative/
+*/test_takes/
+*/tts_cache/
+*/holdout_eval/
+*/kokoro_eval/
+*/export/
+*/ambient.wav
+*/model.pt
+*/model.json
+*/config.json
+
+# Loose audio data anywhere (recordings, samples)
+*.wav
+*.flac
+*.mp3
+*.ogg
+*.m4a
+*.aac
+
+# Keep small bundled audio that ships with the repo (test fixtures, demo clips)
+!heed/data/**/*.wav
+
+# --- Trained model artifacts (cleanly distinguished from source) ---
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.bin
+
+# Re-include the demo models that ship with the examples so a fresh clone has a
+# runnable browser and mobile demo. These are committed deliberately; everything
+# else matching the patterns above stays ignored.
+!examples/inference_react_native/assets/slot*.onnx
+!examples/inference_react_native/assets/slot*.tflite
+!examples/inference_browser/*.onnx
+
+# --- Downloaded TTS voice files / large model checkpoints ---
+*.npz
+*-voices*.bin
+voices*.bin
+
+# --- Logs / scratch ---
+*.log
+logs/
+scratch/
+tmp/

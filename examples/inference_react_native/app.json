@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "heed",
+    "slug": "heed-inference",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ai.heed.inference.example",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Heed needs microphone access to detect the wake word on-device. Audio never leaves this phone.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "ai.heed.inference.example",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "assetBundlePatterns": [
+      "assets/**/*"
+    ],
+    "plugins": [
+      [
+        "react-native-fast-tflite",
+        {
+          "enableCoreMLDelegate": true,
+          "enableAndroidGpuLibraries": true
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,2 @@
+# Drop your `wake.onnx` and `wake.json` here (from `heed export <project>`).
+# Both files are gitignored — each developer brings their own model.

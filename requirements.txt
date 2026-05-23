@@ -1,0 +1,11 @@
+torch>=2.0
+numpy>=1.20
+scipy>=1.10
+soundfile>=0.12
+click>=8.0
+# sounddevice>=0.4   # optional: live mic via CLI (not needed by the web UI).
+# piper-tts>=1.2     # optional: TTS engine #1 (904 LibriTTS voices). After install, run `heed download-tts`.
+# kokoro-onnx>=0.4   # optional: TTS engine #2 (67 voices, different acoustic family). After install, run `heed download-kokoro`.
+# flask>=3.0         # optional: browser UI (`heed ui`). One-line install gets you record / train / live test in the browser.
+# onnx>=1.15         # optional: `heed export` to ONNX for deployment.
+# onnxruntime>=1.16  # optional: verifying exported ONNX models + INT8 quantization (already pulled in by piper-tts).

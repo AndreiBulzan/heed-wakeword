@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heed Wake Word</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --fg: #e6edf3;
+      --muted: #7d8590;
+      --accent: #58a6ff;
+      --trigger: #56d364;
+      --bar-bg: #21262d;
+    }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      margin: 0; padding: 2rem;
+      background: var(--bg); color: var(--fg);
+      max-width: 760px; margin-inline: auto;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .sub { color: var(--muted); margin-bottom: 1.5rem; }
+    .panel {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
+    }
+    button {
+      background: var(--accent); color: #fff; border: 0;
+      padding: 0.6rem 1.1rem; border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-weight: 500;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:hover:not(:disabled) { filter: brightness(1.1); }
+    .row { display: flex; align-items: center; gap: 0.75rem; }
+    .bar {
+      position: relative; height: 28px; background: var(--bar-bg);
+      border-radius: 4px; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; background: var(--accent);
+      transition: width 50ms linear, background 200ms;
+    }
+    .bar-fill.triggered { background: var(--trigger); }
+    .bar-marker {
+      position: absolute; top: -4px; bottom: -4px;
+      width: 2px; background: var(--muted);
+    }
+    .label-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem;
+    }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1.2rem; font-size: 0.9rem; }
+    .stats span:nth-child(odd) { color: var(--muted); }
+    .trigger-log {
+      max-height: 140px; overflow-y: auto;
+      font-family: ui-monospace, monospace; font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .trigger-log .pulse { color: var(--trigger); font-weight: bold; }
+    code { background: #21262d; padding: 0.1rem 0.4rem; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>Heed Wake Word</h1>
+  <p class="sub">Real-time wake-word detection in your browser. All audio
+  stays on this device. Nothing is sent anywhere.</p>
+
+  <div class="panel">
+    <p id="phrase-line">Loading model…</p>
+    <div class="row">
+      <button id="start-btn" disabled>Start listening</button>
+      <button id="stop-btn" disabled>Stop</button>
+      <span id="status" class="sub" style="margin-left: 0.6rem;"></span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="bar">
+      <div id="prob-bar" class="bar-fill" style="width: 0%"></div>
+      <div id="thresh-marker" class="bar-marker" style="left: 50%"></div>
+    </div>
+    <div class="label-row">
+      <span>0.0</span>
+      <span>threshold: <span id="thresh-label">-</span></span>
+      <span>1.0</span>
+    </div>
+
+    <div class="stats" style="margin-top: 1rem;">
+      <span>raw probability</span><span id="prob-val">-</span>
+      <span>smoothed (EMA)</span><span id="ema-val">-</span>
+      <span>energy gate</span><span id="gate-val">-</span>
+      <span>inference latency (median, ms)</span><span id="lat-val">-</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <strong>Triggers:</strong>
+    <div id="trigger-log" class="trigger-log">(none yet)</div>
+  </div>
+
+  <p class="sub" style="font-size: 0.85rem;">
+    Drop a trained model at <code>./wake.onnx</code> (with
+    <code>wake.json</code> sidecar), for example the one produced by
+    <code>heed export &lt;project&gt;</code>. The default loads from the
+    same folder as <code>index.html</code>.
+  </p>
+
+  <!-- ONNX Runtime Web (WASM + SIMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
+  <script type="module">
+    import { WakeWordDetector } from "./wakeword.js";
+
+    const phraseLine = document.getElementById("phrase-line");
+    const startBtn = document.getElementById("start-btn");
+    const stopBtn = document.getElementById("stop-btn");
+    const status = document.getElementById("status");
+    const probBar = document.getElementById("prob-bar");
+    const threshMarker = document.getElementById("thresh-marker");
+    const threshLabel = document.getElementById("thresh-label");
+    const probVal = document.getElementById("prob-val");
+    const emaVal = document.getElementById("ema-val");
+    const gateVal = document.getElementById("gate-val");
+    const latVal = document.getElementById("lat-val");
+    const triggerLog = document.getElementById("trigger-log");
+
+    let detector = null;
+    let audioCtx = null;
+    let micStream = null;
+    let workletNode = null;
+    const latencies = [];
+
+    async function loadModel() {
+      status.textContent = "loading model…";
+      const meta = await fetch("./wake.json").then(r => r.json());
+      const sess = await ort.InferenceSession.create("./wake.onnx", {
+        executionProviders: ["wasm"],
+      });
+      detector = new WakeWordDetector(sess, meta);
+      phraseLine.textContent = `Listening for: "${meta.phrase}"`;
+      threshLabel.textContent = meta.threshold.toFixed(3);
+      threshMarker.style.left = `${meta.threshold * 100}%`;
+      startBtn.disabled = false;
+      status.textContent = "model loaded; click Start";
+    }
+
+    async function start() {
+      startBtn.disabled = true;
+      status.textContent = "requesting mic…";
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: {
+          channelCount: 1, sampleRate: 16000, echoCancellation: false,
+          noiseSuppression: false, autoGainControl: false,
+        }});
+      } catch (e) {
+        status.textContent = `mic denied: ${e.message}`;
+        startBtn.disabled = false;
+        return;
+      }
+      audioCtx = new AudioContext({ sampleRate: 16000 });
+      await audioCtx.audioWorklet.addModule("./audio-worklet.js");
+      const src = audioCtx.createMediaStreamSource(micStream);
+      workletNode = new AudioWorkletNode(audioCtx, "wake-word-capture");
+      workletNode.port.onmessage = async (e) => {
+        const chunk = e.data;
+        const t0 = performance.now();
+        const out = await detector.step(chunk);
+        const dt = performance.now() - t0;
+        latencies.push(dt);
+        if (latencies.length > 50) latencies.shift();
+        updateUI(out, dt);
+      };
+      src.connect(workletNode);
+      // Don't connect to destination - we don't want mic playback.
+
+      stopBtn.disabled = false;
+      status.textContent = "listening";
+      triggerLog.textContent = "(say the wake word)";
+    }
+
+    function stop() {
+      if (workletNode) workletNode.disconnect();
+      if (micStream) micStream.getTracks().forEach(t => t.stop());
+      if (audioCtx) audioCtx.close();
+      workletNode = null; micStream = null; audioCtx = null;
+      detector?.reset();
+      stopBtn.disabled = true;
+      startBtn.disabled = false;
+      status.textContent = "stopped";
+    }
+
+    function updateUI(r, dt) {
+      probBar.style.width = `${Math.min(100, r.prob * 100).toFixed(0)}%`;
+      probBar.classList.toggle("triggered", r.triggered);
+      probVal.textContent = r.prob.toFixed(3);
+      emaVal.textContent = r.ema.toFixed(3);
+      gateVal.textContent = r.gated ? "skipped (silence)" : "passed";
+      const lat = latencies.slice().sort((a,b)=>a-b)[Math.floor(latencies.length/2)];
+      latVal.textContent = lat ? lat.toFixed(2) : "-";
+      if (r.triggered) {
+        const ts = new Date().toLocaleTimeString();
+        const line = document.createElement("div");
+        line.className = "pulse";
+        line.textContent = `${ts}  TRIGGER  (prob=${r.prob.toFixed(3)} ema=${r.ema.toFixed(3)})`;
+        triggerLog.prepend(line);
+      }
+    }
+
+    startBtn.addEventListener("click", start);
+    stopBtn.addEventListener("click", stop);
+    loadModel().catch(e => {
+      phraseLine.textContent = `error loading model: ${e.message}`;
+      console.error(e);
+    });
+  </script>
+</body>
+</html>

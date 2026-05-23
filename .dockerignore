@@ -1,0 +1,26 @@
+# Keep the build context small and the image clean.
+.git
+.github
+**/__pycache__
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Node / mobile build trees (not needed to run the studio)
+**/node_modules
+examples/inference_react_native/android/build
+examples/inference_react_native/android/.gradle
+examples/inference_react_native/android/app/build
+examples/inference_react_native/.expo
+
+# User project data (recordings, trained weights, caches)
+*/positive/
+*/negative/
+*/tts_cache/
+*/export/
+workspace/
+
+# Docs and scratch that the image does not need
+notes
+*.md

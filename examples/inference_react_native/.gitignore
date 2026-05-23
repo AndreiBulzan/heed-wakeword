@@ -1,0 +1,21 @@
+node_modules/
+.expo/
+dist/
+ios/
+*.log
+.DS_Store
+
+# Bare workflow: android/ IS committed (EAS skips prebuild when it's present),
+# but we still exclude its build artifacts (RN's prebuild ships a nested
+# .gitignore for these, kept here as belt-and-suspenders).
+android/build/
+android/.gradle/
+android/.cxx/
+android/app/build/
+android/app/.cxx/
+android/local.properties
+android/keystores/
+
+# User-provided model files (each developer copies their own)
+assets/wake.onnx
+assets/wake.json

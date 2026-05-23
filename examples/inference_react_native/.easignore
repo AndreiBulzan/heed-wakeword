@@ -1,0 +1,22 @@
+# EAS Build ignore list. When this file exists, EAS uses ONLY it (not
+# .gitignore). Keep it tight: upload source + config + bundled assets,
+# nothing else. EAS regenerates android/ and ios/ during prebuild.
+
+node_modules/
+ios/
+.expo/
+dist/
+*.log
+.DS_Store
+
+# We DO upload android/ (bare workflow). But never its build artifacts.
+android/build/
+android/.gradle/
+android/.cxx/
+android/app/build/
+android/app/.cxx/
+android/local.properties
+
+# Local model files (each developer brings their own via heed export)
+assets/wake.onnx
+assets/wake.json

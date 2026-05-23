@@ -1,0 +1,56 @@
+{
+  "phrase": "activate x",
+  "threshold": 0.708,
+  "sample_rate": 16000,
+  "audio_window_samples": 16000,
+  "n_mels": 40,
+  "n_fft": 512,
+  "win_length": 400,
+  "hop_length": 160,
+  "window_frames": 100,
+  "mel_fmin_hz": 0.0,
+  "mel_fmax_hz": 8000.0,
+  "window_type": "hann",
+  "preprocessing": [
+    {
+      "op": "highpass_filter",
+      "cutoff_hz": 100.0,
+      "order": 8,
+      "mains_notch_hz": [
+        50.0,
+        60.0
+      ],
+      "note": "8th-order Butterworth HPF + 50/60 Hz notch filters. Killing sub-100Hz rumble before mel is critical for robustness across mic profiles."
+    },
+    {
+      "op": "peak_normalize",
+      "target_dbfs": -3.0,
+      "note": "Scale audio so peak = 10^(-3/20) \u2248 0.707."
+    },
+    {
+      "op": "log_mel",
+      "note": "Standard log-mel with hann window. See mel params above."
+    },
+    {
+      "op": "cmn",
+      "note": "Cepstral mean normalization \u2014 subtract per-clip mean across time per mel bin. CRITICAL: model trained with CMN expects CMN'd input; omitting it makes the model wildly inaccurate."
+    }
+  ],
+  "trigger": {
+    "consecutive_frames": 2,
+    "refractory_seconds": 0.7,
+    "ema_alpha": 0.5,
+    "note": "Trigger when raw prob > threshold for `consecutive_frames` in a row, then suppress for `refractory_seconds`. ema_alpha is for display smoothing only (not the trigger gate \u2014 the EMA lags and was suppressing short, confident detections)."
+  },
+  "energy_gate": {
+    "rms_threshold_dbfs": -55.0,
+    "voice_band_min_fraction": 0.15,
+    "voice_band_lo_hz": 100.0,
+    "voice_band_hi_hz": 7000.0,
+    "note": "Skip the model entirely when gate fails. Prevents amplified-mic-noise false readings during silence."
+  },
+  "model_size": "medium",
+  "channels": 64,
+  "n_blocks": 3,
+  "heed_export_version": 1
+}

@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "heed-wakeword"
+version = "0.1.0"
+description = "Tiny, custom, on-device wake-word detection. Train your own in seconds, deploy anywhere (Python / browser / mobile)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Andrei Bulzan" }]
+keywords = [
+    "wake-word", "keyword-spotting", "voice-activity", "speech",
+    "on-device", "edge-ai", "tts", "onnx", "tflite",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch>=2.0",
+    "numpy>=1.20",
+    "scipy>=1.10",
+    "soundfile>=0.12",
+    "click>=8.0",
+]
+
+# Opt-in extras keep the base install lean. Deploying a trained model needs
+# NONE of these, just an ONNX/TFLite runtime in your target language.
+[project.optional-dependencies]
+mic = ["sounddevice>=0.4"]                  # live mic for CLI record/listen
+tts = ["piper-tts>=1.2"]                     # multi-speaker augmentation (904 LibriTTS voices)
+kokoro = ["kokoro-onnx>=0.4"]                # second TTS family (cross-TTS validation)
+ui = ["flask>=3.0"]                          # the browser training studio
+export = ["onnx>=1.15", "onnxruntime>=1.16"] # export to ONNX + verify
+dev = ["pytest>=7"]                          # contributor test suite (not shipped to users)
+all = [
+    "sounddevice>=0.4", "piper-tts>=1.2", "kokoro-onnx>=0.4",
+    "flask>=3.0", "onnx>=1.15", "onnxruntime>=1.16",
+]
+
+[project.urls]
+Homepage = "https://github.com/AndreiBulzan/heed-wakeword"
+Repository = "https://github.com/AndreiBulzan/heed-wakeword"
+Issues = "https://github.com/AndreiBulzan/heed-wakeword/issues"
+
+[project.scripts]
+heed = "heed.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["heed*"]

@@ -1,0 +1,12 @@
+# Self-host the Heed studio with one command:  docker compose up
+# Open http://127.0.0.1:7777 in your browser. Trained models and recordings
+# persist in ./workspace on the host.
+services:
+  heed-studio:
+    build: .
+    image: heed
+    ports:
+      - "7777:7777"
+    volumes:
+      - ./workspace:/workspace
+    restart: unless-stopped
