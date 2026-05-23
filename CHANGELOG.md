@@ -4,7 +4,16 @@ All notable changes to heed are documented in this file. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] (unreleased)
+## [0.1.1] - 2026-05-24
+
+### Docs and tooling
+
+- Added a second Colab notebook, `heed_train_your_voice_colab.ipynb`, that trains
+  on your own voice (upload or record positives) and tests the model in Colab.
+- Added per-tool guides under `docs/` and status badges to the README.
+- Made README links absolute so they resolve on the PyPI project page.
+
+## [0.1.0] - 2026-05-24
 
 First public release.
 
@@ -94,4 +103,3 @@ First public release.
   "activate x" as example models, and everyone else trains their own phrase.
 - Embedded and Cortex-M deployment is plausible through INT8 ONNX or
   TFLite-Micro but is not validated yet.
-- A Colab trainer and a hosted browser demo are planned.

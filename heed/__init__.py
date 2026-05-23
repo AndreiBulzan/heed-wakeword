@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 SAMPLE_RATE = 16000
 WINDOW_SECONDS = 1.0

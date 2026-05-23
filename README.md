@@ -1,5 +1,7 @@
 # Heed Wake Word
 
+[![PyPI](https://img.shields.io/pypi/v/heed-wakeword.svg)](https://pypi.org/project/heed-wakeword/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/LICENSE) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb)
+
 Train your own wake word in seconds, or grab a ready-made one, then run it
 fully on-device. No cloud, no telemetry, no per-call fees. A wake word here is a
 40 to 235 KB model that runs in Python, in the browser, and on iOS and Android.
@@ -7,7 +9,7 @@ fully on-device. No cloud, no telemetry, no per-call fees. A wake word here is a
 Heed is Apache-2.0 licensed, so commercial and closed-source use are fine, with no
 copyleft.
 
-Try it with no install: [train your own in Colab](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb), or run the static [browser demo](examples/inference_browser/).
+Try it with no install: [train your own in Colab](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb), or run the static [browser demo](https://github.com/AndreiBulzan/heed-wakeword/tree/main/examples/inference_browser).
 
 ## Two ways to use it
 
@@ -178,10 +180,13 @@ synthesis during training. See the install notes for the optional
 
 ## Documentation
 
-Deeper guides for each tool live in [`docs/`](docs/): the
-[studio UI](docs/studio.md), [export and deploy](docs/export-and-deploy.md),
-[Colab](docs/colab.md), [Docker](docs/docker.md), [mobile](docs/mobile.md), and
-[browser and JS](docs/browser-and-js.md).
+Deeper guides for each tool live in [`docs/`](https://github.com/AndreiBulzan/heed-wakeword/tree/main/docs): the
+[studio UI](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/studio.md),
+[export and deploy](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/export-and-deploy.md),
+[Colab](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/colab.md),
+[Docker](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/docker.md),
+[mobile](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/mobile.md), and
+[browser and JS](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/browser-and-js.md).
 
 ## Roadmap
 
