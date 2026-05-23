@@ -181,17 +181,16 @@ Deeper guides for each tool live in [`docs/`](docs/): the
 
 ## Roadmap
 
-Working today: custom training (studio and CLI), GPU and CPU, multi-speaker TTS,
-cross-speaker eval, ONNX and TFLite export with verified equivalence, browser and
-iOS and Android inference, live multi-word switching, a zero-install Colab
-trainer, a static client-side browser demo, and a Docker studio image.
+Everything below works today: custom training from the studio or the CLI, on GPU
+or CPU; multi-speaker TTS augmentation and a cross-speaker evaluation; ONNX and
+TFLite export with verified numerical equivalence; inference in the browser and on
+iOS and Android, with live multi-word switching; a zero-install Colab trainer; a
+static client-side browser demo; and a Docker image for the studio.
 
-Ideas for later, not promises: a curated pretrained pack of generic phrases, more
-reference preprocessing ports, folding the preprocessing into the model graph so
-raw audio can go straight in, and embedded targets such as TFLite-Micro. Whether
-any of these land depends on interest and time.
-
-This is v0.1. The "working today" list is the honest scope.
+A few directions are interesting for later: a curated pack of speaker-independent
+phrases, more reference preprocessing ports, folding the preprocessing into the
+model graph so raw audio goes straight in, or embedded targets like TFLite-Micro.
+None of these are promised. This is a v0.1, and what runs today is the real scope.
 
 ## License
 
