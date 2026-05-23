@@ -17,7 +17,7 @@ Try it with no install: [train your own in Colab](https://colab.research.google.
    doc, activate x, hey jarvis, hey fetch) and an open "custom" slot for a model
    you train and push from the studio. hey doc and activate x are the solid
    ones. hey jarvis and hey fetch are quick placeholders that show off live
-   multi-word switching. A curated, speaker-independent pack is planned.
+   multi-word switching. These example models will keep improving.
 
 Both paths produce the same artifact. You get an ONNX or TFLite model plus a
 `wake.json` preprocessing contract, and it runs the same way on every platform.
