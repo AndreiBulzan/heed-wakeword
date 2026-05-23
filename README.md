@@ -4,8 +4,8 @@ Train your own wake word in seconds, or grab a ready-made one, then run it
 fully on-device. No cloud, no telemetry, no per-call fees. A wake word here is a
 40 to 235 KB model that runs in Python, in the browser, and on iOS and Android.
 
-Heed is Apache-2.0 licensed, so it is free for commercial use with no copyleft.
-It is an open option where wake-word SDKs are usually paid and closed.
+Heed is Apache-2.0 licensed, so commercial and closed-source use are fine, with no
+copyleft.
 
 Try it with no install: [train your own in Colab](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb), or run the static [browser demo](examples/inference_browser/).
 
@@ -22,15 +22,19 @@ Try it with no install: [train your own in Colab](https://colab.research.google.
 Both paths produce the same artifact. You get an ONNX or TFLite model plus a
 `wake.json` preprocessing contract, and it runs the same way on every platform.
 
-## Why Heed
+## Where Heed fits
 
-| | Heed | Picovoice | openWakeWord |
-|---|---|---|---|
-| License | Apache-2.0, commercial OK | Paid, closed | Code Apache, weights CC-BY-NC |
-| Train your own | Yes, studio plus CLI | Paid console | Yes, heavier |
-| On-device, no cloud | Yes | Yes | Yes |
-| Browser, client-side | Yes | No | No |
-| iOS and Android demos | Yes, ONNX and TFLite | Yes | Community |
+Tools like Picovoice (Porcupine), openWakeWord, and LiveKit are the established
+options today, and they are all good. Heed is for a specific gap: a fully
+permissive (Apache-2.0), train-your-own wake word that also runs client-side in
+the browser.
+
+In practice that means you train a custom word in seconds from the studio or the
+CLI, with multi-speaker TTS and a cross-speaker evaluation so the model works for
+people other than you. The result is a sub-250 KB model that runs the same way in
+Python, in the browser, and on iOS and Android, as ONNX (float32 or int8) or
+TFLite. You can self-host the studio in Docker or train in Colab with no setup at
+all, and commercial and closed-source use carry no per-call fees.
 
 ## Quickstart (about a minute)
 
@@ -71,8 +75,8 @@ is `heed`.
   cross-TTS-family eval tell you whether a model works beyond the trainer's own
   voice, before you ship it.
 - **A permissive stack.** torch, numpy, scipy, soundfile, click, with optional
-  piper-tts, kokoro-onnx, flask, and onnxruntime. No CC-BY-NC weights and no
-  research-only data.
+  piper-tts, kokoro-onnx, flask, and onnxruntime, all under MIT, BSD, or
+  Apache-2.0. The models you train are yours to ship.
 
 ## Deploy anywhere
 
