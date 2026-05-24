@@ -356,14 +356,40 @@ def create_app(workspace: Path | None = None) -> Flask:
             if cur == "running":
                 return jsonify({"error": "training already running"}), 409
 
+        # Gracefully disable any TTS augmentation that is not available instead
+        # of failing the whole run. The model still trains on the user's
+        # recordings (speaker-locked) and we return a warning so the UI can say so.
+        tts_warnings: list[str] = []
+        tts_pos = int(data.get("tts_pos", 0))
+        kokoro_pos = int(data.get("kokoro_pos", 200))
+        if tts_pos > 0 and not is_piper_importable():
+            tts_warnings.append("piper-tts is not installed, so Piper TTS "
+                                "positives were skipped (pip install piper-tts).")
+            tts_pos = 0
+        elif tts_pos > 0 and not is_voice_available():
+            tts_warnings.append("The Piper voice is not downloaded, so Piper TTS "
+                                "positives were skipped (run heed download-tts).")
+            tts_pos = 0
+        if kokoro_pos > 0:
+            from .tts_kokoro import (is_kokoro_importable as k_importable,
+                                     is_voice_available as k_avail)
+            if not k_importable():
+                tts_warnings.append("kokoro-onnx is not installed, so Kokoro "
+                                    "positives were skipped (pip install kokoro-onnx).")
+                kokoro_pos = 0
+            elif not k_avail():
+                tts_warnings.append("Kokoro voices are not downloaded, so Kokoro "
+                                    "positives were skipped (run heed download-kokoro).")
+                kokoro_pos = 0
+
         cfg = TrainerConfig(
             phrase=cfg_json.get("phrase", ""),
             epochs=int(data.get("epochs", 100)),
             aug_positives_per_real=int(data.get("aug_pos", 40)),
             aug_negatives_per_real=int(data.get("aug_neg", 25)),
-            tts_positives=int(data.get("tts_pos", 0)),
+            tts_positives=tts_pos,
             tts_negatives_per_phrase=int(data.get("tts_neg_count", 20)),
-            kokoro_positives=int(data.get("kokoro_pos", 200)),
+            kokoro_positives=kokoro_pos,
             threshold_target_fpr=float(data.get("target_fpr", 0.01)),
             device=data.get("device", "auto"),
             partial_negatives=bool(data.get("partial_negatives", True)),
@@ -376,41 +402,6 @@ def create_app(workspace: Path | None = None) -> Flask:
             force_regenerate_tts=bool(data.get("force_regenerate_tts", False)),
             model_size=str(data.get("model_size", "medium")),
         )
-
-        if cfg.tts_positives > 0:
-            if not is_piper_importable():
-                import sys
-                return jsonify({
-                    "error": (
-                        f"TTS requested but piper-tts is not importable from "
-                        f"this Python ({sys.executable}). "
-                        f"Run `{sys.executable} -m pip install piper-tts` "
-                        f"or `heed doctor` to diagnose."
-                    )
-                }), 400
-            if not is_voice_available():
-                return jsonify({
-                    "error": "TTS requested but voice not downloaded. "
-                             "Run `heed download-tts` from a terminal."
-                }), 400
-
-        if cfg.kokoro_positives > 0:
-            from .tts_kokoro import (is_kokoro_importable as k_importable,
-                                     is_voice_available as k_avail)
-            if not k_importable():
-                import sys
-                return jsonify({
-                    "error": (
-                        f"Kokoro positives requested but kokoro-onnx is not "
-                        f"importable from this Python ({sys.executable}). "
-                        f"Run `{sys.executable} -m pip install kokoro-onnx`."
-                    )
-                }), 400
-            if not k_avail():
-                return jsonify({
-                    "error": "Kokoro positives requested but voices not "
-                             "downloaded. Run `heed download-kokoro`."
-                }), 400
 
         wake_lower = cfg.phrase.strip().lower()
         if cfg.tts_positives > 0 and bool(data.get("auto_distractors", True)):
@@ -432,7 +423,7 @@ def create_app(workspace: Path | None = None) -> Flask:
             cfg.tts_negative_phrases = data.get("extra_distractors") or []
 
         _train_in_background(app, name, cfg)
-        return jsonify({"ok": True})
+        return jsonify({"ok": True, "warnings": tts_warnings})
 
     @app.route("/api/projects/<name>/train_status", methods=["GET"])
     def api_train_status(name: str):
