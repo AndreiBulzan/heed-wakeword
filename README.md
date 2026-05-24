@@ -21,9 +21,9 @@ Try it with no install. Train in Colab on a free GPU, either the
 1. **Train a custom word.** Record a phrase a few times, or let TTS synthesize
    it across hundreds of voices, then train on CPU or GPU in seconds and export.
 2. **Use a pretrained word.** The mobile demo bundles four example words (hey
-   doc, activate x, hey jarvis, hey fetch) and an open "custom" slot for a model
+   doc, activate x, hey jarvis, hey scout) and an open "custom" slot for a model
    you train and push from the studio. hey doc and activate x are the solid
-   ones. hey jarvis and hey fetch are quick placeholders that show off live
+   ones. hey jarvis and hey scout are quick placeholders that show off live
    multi-word switching. Slightly better pretrained defaults are planned.
 
 Both paths produce the same artifact. You get an ONNX or TFLite model plus a

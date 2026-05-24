@@ -9,7 +9,7 @@ HPF, STFT, mel, and CMN code, running in the Hermes engine. Inference is ONNX
 via `onnxruntime-react-native`, which picks the best execution provider per
 platform (CPU, NNAPI on Android, Core ML on iOS when the delegate is enabled).
 
-The app ships five word slots (hey doc, activate x, hey jarvis, hey fetch, and a
+The app ships five word slots (hey doc, activate x, hey jarvis, hey scout, and a
 custom slot) with live word switching and on-device runtime switching between
 ONNX fp32, ONNX int8, and TFLite.
 

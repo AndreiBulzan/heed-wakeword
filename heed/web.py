@@ -2312,7 +2312,7 @@ function renderQualityTips() {
   if (nPos < 20) {
     tips.push(`<b>Record more "${currentInfo.phrase}"</b> &mdash; you have <b>${nPos}</b>, target <b>15-25</b>. Each new recording with deliberate variation (close to mic, far away, soft voice, fast, slow, with background noise) is worth roughly <b>50 synthetic samples</b>.`);
   }
-  tips.push(`<b>Step 2b - phonetic neighbors</b>: record 5-8 of "hey siri / hey google / hey fetch / hi jasper" in <i>your own voice</i>. This is the single biggest fix for "fires on any 'hey X'".`);
+  tips.push(`<b>Step 2b - phonetic neighbors</b>: record 5-8 of "hey siri / hey google / hey alexa / hi jasper" in <i>your own voice</i>. This is the single biggest fix for "fires on any 'hey X'".`);
   tips.push(`<b>Step 2c - room ambient</b>: 5 seconds of silence. Synthesized TTS samples get mixed with this so they sound recorded by your actual mic.`);
   tips.push(`<b>Always-on augmentation</b> &mdash; the trainer now applies SpecAugment (mel masking), parametric room reverb (RIR), a 6-class noise pool (white/pink/brown/hum/fan/babble), and spectral-envelope matching (TTS audio EQ-shifted toward your mic's spectrum). All on by default; toggle in ⚙ settings.`);
 
