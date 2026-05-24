@@ -24,22 +24,20 @@ function energyGate(audio, meta) {
   const rmsDbfs = 20 * Math.log10(rms);
   if (rmsDbfs < rmsThreshDbfs) return false;
 
-  // Voice-band energy fraction: a cheap proxy for "is there speech here?"
-  // We use the time-domain audio: high-pass + low-pass via simple
-  // single-pole filters and compare RMS post vs pre. Exact value isn't
-  // critical, but the threshold cuts pure hum / pure HF noise.
-  // (For the JS reference we keep this simple — the full spec is in
-  //  python heed.gate; deployment can mirror that exactly if desired.)
-  let prev = 0;
-  let bandSumSq = 0;
-  // First-order HP at ~100 Hz: y[n] = α(y[n-1] + x[n] - x[n-1])
-  const alpha = 0.987;  // ≈ exp(-2π·100/16000)
-  let xPrev = 0, yPrev = 0;
+  // Voice-band (100-7000 Hz) energy fraction: the same idea as heed.gate, done
+  // with cheap one-pole filters instead of an FFT. A high-pass at 100 Hz drops
+  // rumble (fans, handling); a low-pass at 7000 Hz drops mic hiss; the ratio of
+  // the band-passed RMS to the full RMS approximates the spectral voice-band
+  // fraction. The upper cutoff is what stops steady fan/hiss noise from passing.
+  const aHp = 0.987;  // high-pass, exp(-2*pi*100/16000)
+  const aLp = 0.936;  // low-pass,  1 - exp(-2*pi*7000/16000)
+  let xPrev = 0, yHp = 0, yLp = 0, bandSumSq = 0;
   for (let i = 0; i < audio.length; i++) {
-    const y = alpha * (yPrev + audio[i] - xPrev);
-    bandSumSq += y * y;
-    xPrev = audio[i];
-    yPrev = y;
+    const x = audio[i];
+    yHp = aHp * (yHp + x - xPrev);   // high-pass above 100 Hz
+    yLp = yLp + aLp * (yHp - yLp);   // low-pass below 7000 Hz
+    bandSumSq += yLp * yLp;
+    xPrev = x;
   }
   const bandFrac = Math.sqrt(bandSumSq / audio.length) / (rms + 1e-9);
   return bandFrac >= voiceFracMin;
@@ -64,6 +62,10 @@ export class WakeWordDetector {
     }
     this.threshold = meta.threshold;
     this.preprocessor = new StreamingPreprocessor();
+    // Raw 1-second ring buffer for the energy gate, so it sees the same window
+    // the model does (heed.gate runs on the full 1-s frame). Gating on the tiny
+    // per-call chunk let brief noise gusts cross the RMS threshold too easily.
+    this.gateBuffer = new Float32Array(SAMPLE_RATE);
 
     // Smoothing + hysteresis (mirrors python infer.WakeWordDetector)
     const t = meta.trigger ?? {};
@@ -78,6 +80,7 @@ export class WakeWordDetector {
 
   reset() {
     this.preprocessor.reset();
+    this.gateBuffer.fill(0);
     this.ema = 0;
     this.aboveCount = 0;
     this.lastTriggerTime = -Infinity;
@@ -89,7 +92,16 @@ export class WakeWordDetector {
     // gated (silent) chunks; ingest is cheap (O(samples)). The energy gate runs
     // on RAW audio and only controls the expensive STFT + model run below.
     this.preprocessor.ingest(audioChunk);
-    const gated = !energyGate(audioChunk, this.meta);
+    // Roll the raw chunk into the 1-second gate buffer and gate on the whole
+    // second, matching heed.gate's window (not just this ~100 ms chunk).
+    const gb = this.gateBuffer, L = gb.length, n = audioChunk.length;
+    if (n >= L) {
+      for (let i = 0; i < L; i++) gb[i] = audioChunk[n - L + i];
+    } else {
+      gb.copyWithin(0, n);
+      for (let i = 0; i < n; i++) gb[L - n + i] = audioChunk[i];
+    }
+    const gated = !energyGate(this.gateBuffer, this.meta);
     if (gated) {
       this.ema *= 0.5;
       this.aboveCount = 0;
