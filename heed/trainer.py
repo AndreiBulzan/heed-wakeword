@@ -68,7 +68,7 @@ class TrainerConfig:
     device: str = "auto"
     # Partial-utterance hard negatives: for each positive, split into first
     # half and second half and add both as negatives. Teaches the model to
-    # require the FULL phrase (not just "hey" or just "andre").
+    # require the FULL phrase (not just "hey" or just "jasper").
     partial_negatives: bool = True
     # SpecAugment (Park et al. 2019): random freq/time masking on log-mel.
     # Cheap, proven KWS win - model can't lean on any one freq/time band.
@@ -248,7 +248,7 @@ def _build_dataset(
     # Partial-utterance hard negatives: split each positive into its first
     # and second half and add both as negatives, with audio augmentation.
     # Forces the model to discriminate the *whole* phrase, not "hey" or
-    # "andre" alone.
+    # "jasper" alone.
     if cfg.partial_negatives and positives:
         partials = _make_partial_negatives(positives)
         if partials:

@@ -41,7 +41,7 @@ HELDOUT_SPEAKER_IDS: tuple[int, ...] = (47, 451, 832)
 
 # Common short companions to wake-word prefixes ("hey X", "hi X", "ok X"
 # usually have one of these as X in everyday speech). When the user's wake
-# phrase is "hey andre", these become "hey siri", "hey john", etc., which
+# phrase is "hey jasper", these become "hey siri", "hey john", etc., which
 # are exactly the false-trigger phrases that broke the model in practice.
 # Curated for PHONETIC DIVERSITY - covers a wide range of ending phonemes
 # so for any reasonable wake phrase, many of these end up being near-rhymes
@@ -88,8 +88,8 @@ _PREFIX_COMPANION_WORDS = [
     # john/ron) provide useful gradient; full-phoneme-rhymes do not.
 ]
 
-# Common alternate prefixes (these replace "hey" in "hey andre" → "hi andre",
-# "say andre", etc.) - forces the model to also discriminate the prefix word.
+# Common alternate prefixes (these replace "hey" in "hey jasper" → "hi jasper",
+# "say jasper", etc.) - forces the model to also discriminate the prefix word.
 _ALTERNATE_PREFIXES = [
     "hi", "hello", "say", "call", "tell", "ask", "find", "yo", "way",
     "may", "they", "see", "let", "give", "show",
@@ -100,9 +100,9 @@ def phonetic_neighbor_distractors(phrase: str, *, max_neighbors: int = 30) -> li
     """Generate phonetic neighbors of a wake phrase that are likely to cause
     false triggers if not present as hard negatives.
 
-    For "hey andre" this returns ~30 phrases like:
+    For "hey jasper" this returns ~30 phrases like:
         "hey siri", "hey google", "hey there", ... (same prefix, different X)
-        "hi andre", "say andre", "yo andre", ... (different prefix, same X)
+        "hi jasper", "say jasper", "yo jasper", ... (different prefix, same X)
     Plus a couple of single-word distractors that are subwords of the phrase.
     """
     phrase = phrase.strip().lower()
@@ -111,7 +111,7 @@ def phonetic_neighbor_distractors(phrase: str, *, max_neighbors: int = 30) -> li
         return []
     out: list[str] = []
 
-    # Case 1: multi-word wake phrase like "hey andre"
+    # Case 1: multi-word wake phrase like "hey jasper"
     if len(parts) >= 2:
         # SUBWORD NEGATIVES FIRST. Single words from the phrase, isolated,
         # are by far the highest-value phonetic neighbors - "hey" alone and

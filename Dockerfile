@@ -2,33 +2,39 @@
 #
 # Build:  docker build -t heed .
 # Run:    docker run --rm -p 7777:7777 -v "$PWD/workspace:/workspace" heed
+#   or:   docker compose up
 # Then open http://127.0.0.1:7777 and record, train, test, and export.
 #
-# The image is CPU-only. Training a tiny model on CPU is fine. If you want GPU
-# training, run heed natively with a CUDA torch instead (see the README).
+# The image is CPU-only and bundles both multi-speaker TTS families plus their
+# voice files, so training and the cross-speaker / cross-TTS evaluations work out
+# of the box with no extra downloads. That makes it a large image (a few GB). For
+# a lean build, drop `,kokoro` from the install and remove the download line.
+#
+# For GPU training, run heed natively with a CUDA build of torch instead.
 
 FROM python:3.11-slim
 
-# libsndfile backs soundfile (wav read/write). That is all the system audio
-# stack the studio needs; the browser captures the microphone, not the server.
+# libsndfile backs soundfile (wav read/write). The browser captures the
+# microphone, so the server needs no other audio stack.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install the CPU-only torch wheel first so the heed install reuses it instead
-# of pulling the much larger default CUDA build.
+# CPU-only torch first so the heed install reuses it instead of the much larger
+# default CUDA build.
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
-# Install heed from the repo source (no PyPI round-trip needed to build).
+# Install heed from the repo source with the studio, export, and both TTS
+# families (Piper for cross-speaker, Kokoro for cross-family validation).
 COPY . /app
-RUN pip install --no-cache-dir ".[ui,export]"
+RUN pip install --no-cache-dir ".[ui,export,tts,kokoro]"
 
-# Optional: bake in multi-speaker TTS augmentation (adds ~1 GB of voices on
-# first download, not at build). Uncomment to enable, then run `heed
-# download-tts` inside the container.
-# RUN pip install --no-cache-dir "kokoro-onnx>=0.4" "piper-tts>=1.2"
+# Bake the voices into the image so multi-speaker training and the cross-speaker
+# and cross-TTS tests work immediately. Piper LibriTTS-R is about 78 MB; Kokoro
+# is about 340 MB.
+RUN heed download-tts && heed download-kokoro
 
 EXPOSE 7777
 

@@ -1,6 +1,6 @@
 # Heed Wake Word
 
-[![PyPI](https://img.shields.io/pypi/v/heed-wakeword.svg)](https://pypi.org/project/heed-wakeword/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/LICENSE) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb)
+[![PyPI](https://img.shields.io/pypi/v/heed-wakeword.svg)](https://pypi.org/project/heed-wakeword/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/LICENSE) [![CI](https://github.com/AndreiBulzan/heed-wakeword/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreiBulzan/heed-wakeword/actions/workflows/ci.yml) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb) [![Docker](https://img.shields.io/badge/Docker-self--host-2496ED?logo=docker&logoColor=white)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/docker.md)
 
 Train your own wake word in seconds, or grab a ready-made one, then run it
 fully on-device. No cloud, no telemetry, no per-call fees. A wake word here is a

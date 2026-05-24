@@ -24,7 +24,9 @@ docker run --rm -p 7777:7777 -v "$PWD/workspace:/workspace" heed
 
 - The image is CPU-only. Training a tiny model on CPU is fine, just a little
   slower. For GPU training, run heed natively with a CUDA build of torch instead.
-- The image installs `heed-wakeword[ui,export]` from the repo source, so it does
+- The image installs from the repo source (`.[ui,export,tts,kokoro]`), so it does
   not depend on PyPI.
-- To bake in multi-speaker TTS augmentation, uncomment the TTS line in the
-  `Dockerfile`, rebuild, and run `heed download-tts` inside the container once.
+- It bundles both TTS families (Piper and Kokoro) and bakes in their voice files,
+  so multi-speaker training and the cross-speaker and cross-TTS evaluations work
+  with no extra downloads. That makes the image a few GB; for a lean build, drop
+  `,kokoro` from the install line and the download line in the `Dockerfile`.

@@ -26,7 +26,7 @@ of every trigger event with timestamp and scores.
 To use your own word, train and export a model, then copy the files in:
 
 ```bash
-heed init mywake --phrase "hey andre"
+heed init mywake --phrase "hey jasper"
 heed record mywake --kind positive --count 10
 heed record mywake --kind negative --count 10
 heed train  mywake --tts-pos 400

@@ -1579,7 +1579,7 @@ _INDEX_HTML = r"""<!doctype html>
     <p class="hint">Pick a name (any string) and a phrase you want to trigger on.</p>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
       <input id="new-name" placeholder="name" style="flex: 1; min-width: 120px; padding: 10px; background: #0d1015; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; font: inherit;">
-      <input id="new-phrase" placeholder='phrase, e.g. "hey andre"' style="flex: 2; min-width: 180px; padding: 10px; background: #0d1015; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; font: inherit;">
+      <input id="new-phrase" placeholder='phrase, e.g. "hey jasper"' style="flex: 2; min-width: 180px; padding: 10px; background: #0d1015; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; font: inherit;">
       <button id="new-create">Create</button>
     </div>
   </section>
@@ -1620,7 +1620,7 @@ _INDEX_HTML = r"""<!doctype html>
   <section id="step-neighbors" class="hidden">
     <h2>2b - RECORD PHONETIC NEIGHBORS  <span style="color:var(--accent); font-weight:600; text-transform:none; letter-spacing:0;">highly recommended</span></h2>
     <p class="hint">
-      The biggest lever for fixing "hey X / Y andre triggers it too". Say
+      The biggest lever for fixing "hey X / Y jasper triggers it too". Say
       each of these <b>once</b>, in your normal voice. Takes ~30 s total
       and improves discrimination way more than another TTS run would.
     </p>
@@ -1911,7 +1911,7 @@ _INDEX_HTML = r"""<!doctype html>
     <div class="muted" style="font-size: 12px; margin-top: 4px;">
       Adds first-half / second-half clips of each positive (and TTS positive)
       as negatives - forces the model to require the FULL phrase, not just
-      "hey" or "andre" alone.
+      "hey" or "jasper" alone.
     </div>
   </div>
   <div class="field">
@@ -2321,7 +2321,7 @@ function renderQualityTips() {
   if (nPos < 20) {
     tips.push(`<b>Record more "${currentInfo.phrase}"</b> &mdash; you have <b>${nPos}</b>, target <b>15-25</b>. Each new recording with deliberate variation (close to mic, far away, soft voice, fast, slow, with background noise) is worth roughly <b>50 synthetic samples</b>.`);
   }
-  tips.push(`<b>Step 2b - phonetic neighbors</b>: record 5-8 of "hey siri / hey google / hey fetch / hi andre" in <i>your own voice</i>. This is the single biggest fix for "fires on any 'hey X'".`);
+  tips.push(`<b>Step 2b - phonetic neighbors</b>: record 5-8 of "hey siri / hey google / hey fetch / hi jasper" in <i>your own voice</i>. This is the single biggest fix for "fires on any 'hey X'".`);
   tips.push(`<b>Step 2c - room ambient</b>: 5 seconds of silence. Synthesized TTS samples get mixed with this so they sound recorded by your actual mic.`);
   tips.push(`<b>Always-on augmentation</b> &mdash; the trainer now applies SpecAugment (mel masking), parametric room reverb (RIR), a 6-class noise pool (white/pink/brown/hum/fan/babble), and spectral-envelope matching (TTS audio EQ-shifted toward your mic's spectrum). All on by default; toggle in ⚙ settings.`);
 

@@ -1,7 +1,7 @@
 """Command-line interface.
 
 Workflow:
-    heed init my_phrase --phrase "hey andre"
+    heed init my_phrase --phrase "hey jasper"
     heed record my_phrase --kind positive --count 8   # uses mic if available
     heed record my_phrase --kind negative --count 8
     heed train my_phrase
@@ -77,7 +77,7 @@ def cli() -> None:
 
 @cli.command()
 @click.argument("name")
-@click.option("--phrase", required=True, help='Wake phrase, e.g. "hey andre".')
+@click.option("--phrase", required=True, help='Wake phrase, e.g. "hey jasper".')
 def init(name: str, phrase: str) -> None:
     """Create a new wake-word project."""
     project = _project_path(name)
