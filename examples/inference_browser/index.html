@@ -148,6 +148,7 @@
       threshMarker.style.left = `${meta.threshold * 100}%`;
       startBtn.disabled = false;
       status.textContent = "model loaded; click Start";
+      modelStatus.textContent = `Active model: "${meta.phrase}" (bundled demo model)`;
     }
 
     async function start() {
@@ -222,7 +223,7 @@
       const onnx = files.find(f => f.name.toLowerCase().endsWith(".onnx"));
       const json = files.find(f => f.name.toLowerCase().endsWith(".json"));
       if (!onnx || !json) {
-        modelStatus.textContent = "Please provide both a .onnx and a .json file.";
+        modelStatus.textContent = "Drop both a .onnx and a .json file together (the active model is unchanged).";
         return;
       }
       modelStatus.textContent = "loading your model…";
@@ -236,7 +237,7 @@
         threshLabel.textContent = meta.threshold.toFixed(3);
         threshMarker.style.left = `${meta.threshold * 100}%`;
         startBtn.disabled = false;
-        modelStatus.textContent = `loaded ${onnx.name} for "${meta.phrase}" — click Start`;
+        modelStatus.textContent = `Active model: "${meta.phrase}" (your ${onnx.name} + ${json.name}). Click Start.`;
       } catch (e) {
         modelStatus.textContent = `could not load: ${e.message}`;
       }
