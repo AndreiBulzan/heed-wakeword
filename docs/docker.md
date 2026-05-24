@@ -6,18 +6,19 @@ can open the page.
 
 ## Quick start
 
+Pull the prebuilt image and run it, no build needed:
+
 ```bash
-docker compose up        # builds the image, then serves http://127.0.0.1:7777
+docker run --rm -p 7777:7777 -v "$PWD/workspace:/workspace" ghcr.io/andreibulzan/heed:latest
 ```
 
-Recordings, trained models, and exports persist in `./workspace` on the host, so
-they survive restarts.
+Then open http://127.0.0.1:7777. Recordings, trained models, and exports persist
+in `./workspace` on the host, so they survive restarts.
 
-## Or build and run by hand
+## Or build from source
 
 ```bash
-docker build -t heed .
-docker run --rm -p 7777:7777 -v "$PWD/workspace:/workspace" heed
+docker compose up        # or: docker build -t heed . && docker run ... heed
 ```
 
 ## Notes

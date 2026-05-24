@@ -117,15 +117,16 @@ heed smoke                             # synthetic end-to-end self-test, no mic
 
 ## Self-host the studio (Docker)
 
-Run the browser studio in a container, with no local Python setup:
+Run the studio in a container, no local Python setup. Pull the prebuilt image:
 
 ```bash
-docker compose up      # builds the image, then serves http://127.0.0.1:7777
+docker run --rm -p 7777:7777 -v "$PWD/workspace:/workspace" ghcr.io/andreibulzan/heed:latest
 ```
 
-Recordings and trained models persist in `./workspace`. The image is CPU-only,
-which is fine for training a tiny model; for GPU training, run heed natively. See
-`Dockerfile`.
+Then open http://127.0.0.1:7777. Or build from source with `docker compose up`.
+Recordings and trained models persist in `./workspace`, and the image bundles the
+TTS voices so training works out of the box. See the
+[Docker guide](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/docker.md).
 
 ## Recording good data
 
