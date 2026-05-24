@@ -83,3 +83,6 @@ voices*.bin
 logs/
 scratch/
 tmp/
+
+# Docker studio volume (docker compose mounts ./workspace)
+workspace/
