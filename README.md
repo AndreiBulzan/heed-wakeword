@@ -3,8 +3,9 @@
 [![PyPI](https://img.shields.io/pypi/v/heed-wakeword.svg)](https://pypi.org/project/heed-wakeword/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/LICENSE) [![CI](https://github.com/AndreiBulzan/heed-wakeword/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreiBulzan/heed-wakeword/actions/workflows/ci.yml) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb) [![Docker](https://img.shields.io/badge/Docker-self--host-2496ED?logo=docker&logoColor=white)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/docker.md)
 
 Train your own wake word in seconds, or grab a ready-made one, then run it
-fully on-device. No cloud, no telemetry, no per-call fees. A wake word here is a
-40 to 235 KB model that runs in Python, in the browser, and on iOS and Android.
+fully on-device. The model is a 40 to 235 KB file that runs in Python, in the
+browser, and on iOS and Android. Everything runs locally, so the audio never
+leaves the device and there are no usage fees.
 
 Heed is Apache-2.0 licensed, so commercial and closed-source use are fine, with no
 copyleft.
@@ -143,6 +144,17 @@ This is the biggest lever on quality.
   with the cross-speaker eval before you ship.
 
 ## CLI reference
+
+`<name>` is a project you pick with `heed init`; that folder holds your clips, the
+trained model, and the export. A full run is just:
+
+```
+heed init myword --phrase "hey scout"
+heed train myword --tts-pos 400 --kokoro-pos 300 --model-size medium
+heed export myword
+```
+
+Full command list:
 
 ```
 heed ui              [--host 127.0.0.1] [--port 7777] [--workspace DIR]

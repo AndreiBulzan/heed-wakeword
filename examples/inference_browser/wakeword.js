@@ -7,9 +7,9 @@ import {
 } from "./preprocessing.js";
 
 /** RMS + voice-band power gate, a lightweight proxy of heed.gate (Python).
- *  Skips the model when the audio is silent or non-speech-shaped — the power
- *  saver on always-on devices, and the reason the Python detector stays quiet
- *  on ambient.
+ *  Skips the model when the audio is silent or non-speech-shaped. This is the
+ *  power saver on always-on devices, and the reason the Python detector stays
+ *  quiet on ambient.
  *
  *  Runs on the FILTERED 1-second window (post 100 Hz high-pass + 50/60 Hz
  *  notch), exactly like heed.infer. That matters: a quiet room dominated by
@@ -34,8 +34,8 @@ function energyGate(filtered, meta) {
   // upper bound (a one-pole low-pass, drops mic hiss) and takes the in-band
   // POWER fraction (band energy / total energy). This matches heed.gate's
   // |FFT|^2 band ratio and its 0.15 threshold. The previous build divided
-  // band-RMS by full-RMS — an amplitude ratio, i.e. the square root of this —
-  // so it read far higher than 0.15 and almost never gated.
+  // band-RMS by full-RMS, an amplitude ratio (the square root of this), so it
+  // read far higher than 0.15 and almost never gated.
   const aLp = 0.936;  // one-pole low-pass at ~7000 Hz: 1 - exp(-2*pi*7000/16000)
   let yLp = 0, bandSumSq = 0;
   for (let i = 0; i < filtered.length; i++) {

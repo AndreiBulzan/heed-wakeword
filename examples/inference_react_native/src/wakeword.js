@@ -9,7 +9,7 @@ import { N_FFT, StreamingPreprocessor } from "./preprocessing.js";
 // Runs on the FILTERED 1-second window (post 100 Hz high-pass + 50/60 Hz
 // notch), exactly like heed.infer, so quiet rumble-dominated ambient drops
 // below the RMS floor once the sub-100 Hz energy is removed and the model is
-// skipped — instead of running on the raw mic chunk ~10x a second. Returns
+// skipped, instead of running on the raw mic chunk ~10x a second. Returns
 // { pass, rmsDbfs, bandFrac }.
 function energyGate(filtered, meta) {
   const rmsThreshDbfs = meta.energy_gate?.rms_threshold_dbfs ?? -55.0;
@@ -25,8 +25,8 @@ function energyGate(filtered, meta) {
   // biquad high-pass that produced `filtered`; add the 7000 Hz upper bound
   // (one-pole low-pass, drops mic hiss) and take band energy / total energy,
   // matching heed.gate's |FFT|^2 ratio and its 0.15 threshold. (The previous
-  // build divided RMS by RMS — an amplitude ratio, the square root of this —
-  // so it read far higher and almost never gated.)
+  // build divided RMS by RMS, an amplitude ratio (the square root of this), so
+  // it read far higher and almost never gated.)
   const aLp = 0.936;  // one-pole low-pass at ~7000 Hz
   let yLp = 0, bandSumSq = 0;
   for (let i = 0; i < filtered.length; i++) {
@@ -89,8 +89,8 @@ export class WakeWordDetector {
     // expensive STFT + model run below.
     this.preprocessor.ingest(audioChunk);
     // Gate on the FILTERED 1-second window (the model's actual input), like
-    // heed.infer — not the raw mic chunk, which kept sub-100 Hz rumble above
-    // the RMS floor and let the model run on near-silent ambient.
+    // heed.infer. The raw mic chunk keeps sub-100 Hz rumble above the RMS
+    // floor, which let the model run on near-silent ambient.
     const g = energyGate(this.preprocessor.filteredBuffer, this.meta);
     if (!g.pass) {
       this.ema *= 0.5;
