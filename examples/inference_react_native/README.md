@@ -24,7 +24,7 @@ ONNX fp32, ONNX int8, and TFLite.
 ## Step 1: install dependencies
 
 ```bash
-cd code/examples/inference_react_native
+cd examples/inference_react_native
 npm install
 ```
 

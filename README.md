@@ -13,8 +13,9 @@ Try it with no install. Train in Colab on a free GPU, either the
 [quick generic trainer](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb)
 (type a phrase, done) or the
 [train-on-your-own-voice notebook](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_your_voice_colab.ipynb)
-(record or upload a few clips, then test it in the notebook). Or run the static
-[browser demo](https://github.com/AndreiBulzan/heed-wakeword/tree/main/examples/inference_browser).
+(record or upload a few clips, then test it in the notebook). Or try the live
+[browser demo](https://heed.solenvo.com), which runs entirely client-side (source:
+[examples/inference_browser](https://github.com/AndreiBulzan/heed-wakeword/tree/main/examples/inference_browser)).
 
 ## Two ways to use it
 
