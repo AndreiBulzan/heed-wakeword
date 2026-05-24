@@ -100,12 +100,17 @@
     <div id="trigger-log" class="trigger-log">(none yet)</div>
   </div>
 
-  <p class="sub" style="font-size: 0.85rem;">
-    Drop a trained model at <code>./wake.onnx</code> (with
-    <code>wake.json</code> sidecar), for example the one produced by
-    <code>heed export &lt;project&gt;</code>. The default loads from the
-    same folder as <code>index.html</code>.
-  </p>
+  <div class="panel" id="drop-zone" style="border-style: dashed;">
+    <strong>Test your own model</strong>
+    <p class="sub" style="font-size: 0.85rem; margin: 0.4rem 0 0;">
+      Drop your <code>wake.onnx</code> and <code>wake.json</code> here (the files
+      from <code>heed export</code>), or
+      <label style="color: var(--accent); cursor: pointer; text-decoration: underline;">browse<input type="file" id="model-files" accept=".onnx,.json" multiple style="display: none;"></label>.
+      It runs entirely in your browser, nothing is uploaded. ONNX here
+      (<code>.tflite</code> is for the mobile delegates).
+    </p>
+    <span id="model-status" class="sub" style="font-size: 0.85rem;"></span>
+  </div>
 
   <!-- ONNX Runtime Web (WASM + SIMD) -->
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
@@ -206,6 +211,45 @@
         triggerLog.prepend(line);
       }
     }
+
+    // --- load a user-provided model, entirely client-side ---
+    const dropZone = document.getElementById("drop-zone");
+    const modelFiles = document.getElementById("model-files");
+    const modelStatus = document.getElementById("model-status");
+
+    async function loadFromFiles(fileList) {
+      const files = Array.from(fileList);
+      const onnx = files.find(f => f.name.toLowerCase().endsWith(".onnx"));
+      const json = files.find(f => f.name.toLowerCase().endsWith(".json"));
+      if (!onnx || !json) {
+        modelStatus.textContent = "Please provide both a .onnx and a .json file.";
+        return;
+      }
+      modelStatus.textContent = "loading your model…";
+      try {
+        if (workletNode) stop();
+        const meta = JSON.parse(await json.text());
+        const bytes = new Uint8Array(await onnx.arrayBuffer());
+        const sess = await ort.InferenceSession.create(bytes, { executionProviders: ["wasm"] });
+        detector = new WakeWordDetector(sess, meta);
+        phraseLine.textContent = `Listening for: "${meta.phrase}"`;
+        threshLabel.textContent = meta.threshold.toFixed(3);
+        threshMarker.style.left = `${meta.threshold * 100}%`;
+        startBtn.disabled = false;
+        modelStatus.textContent = `loaded ${onnx.name} for "${meta.phrase}" — click Start`;
+      } catch (e) {
+        modelStatus.textContent = `could not load: ${e.message}`;
+      }
+    }
+
+    modelFiles.addEventListener("change", e => loadFromFiles(e.target.files));
+    ["dragenter", "dragover"].forEach(ev => dropZone.addEventListener(ev, e => {
+      e.preventDefault(); dropZone.style.borderColor = "var(--accent)";
+    }));
+    ["dragleave", "drop"].forEach(ev => dropZone.addEventListener(ev, e => {
+      e.preventDefault(); dropZone.style.borderColor = "";
+    }));
+    dropZone.addEventListener("drop", e => loadFromFiles(e.dataTransfer.files));
 
     startBtn.addEventListener("click", start);
     stopBtn.addEventListener("click", stop);
