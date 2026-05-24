@@ -5,29 +5,36 @@
 
 import { N_FFT, StreamingPreprocessor } from "./preprocessing.js";
 
-function energyGate(audio, meta) {
+// RMS + voice-band power gate, a lightweight proxy of heed.gate (Python).
+// Runs on the FILTERED 1-second window (post 100 Hz high-pass + 50/60 Hz
+// notch), exactly like heed.infer, so quiet rumble-dominated ambient drops
+// below the RMS floor once the sub-100 Hz energy is removed and the model is
+// skipped — instead of running on the raw mic chunk ~10x a second. Returns
+// { pass, rmsDbfs, bandFrac }.
+function energyGate(filtered, meta) {
   const rmsThreshDbfs = meta.energy_gate?.rms_threshold_dbfs ?? -55.0;
   const voiceFracMin = meta.energy_gate?.voice_band_min_fraction ?? 0.15;
 
   let sumSq = 0;
-  for (let i = 0; i < audio.length; i++) sumSq += audio[i] * audio[i];
-  const rms = Math.sqrt(sumSq / audio.length);
-  if (rms < 1e-9) return false;
-  const rmsDbfs = 20 * Math.log10(rms);
-  if (rmsDbfs < rmsThreshDbfs) return false;
+  for (let i = 0; i < filtered.length; i++) sumSq += filtered[i] * filtered[i];
+  const rms = Math.sqrt(sumSq / filtered.length);
+  const rmsDbfs = rms < 1e-9 ? -Infinity : 20 * Math.log10(rms);
+  if (rmsDbfs < rmsThreshDbfs) return { pass: false, rmsDbfs, bandFrac: 0 };
 
-  // First-order HPF at ~100 Hz; voice-band proxy
-  const alpha = 0.987;
-  let xPrev = 0, yPrev = 0;
-  let bandSumSq = 0;
-  for (let i = 0; i < audio.length; i++) {
-    const y = alpha * (yPrev + audio[i] - xPrev);
-    bandSumSq += y * y;
-    xPrev = audio[i];
-    yPrev = y;
+  // In-band POWER fraction. The 100 Hz lower bound is already enforced by the
+  // biquad high-pass that produced `filtered`; add the 7000 Hz upper bound
+  // (one-pole low-pass, drops mic hiss) and take band energy / total energy,
+  // matching heed.gate's |FFT|^2 ratio and its 0.15 threshold. (The previous
+  // build divided RMS by RMS — an amplitude ratio, the square root of this —
+  // so it read far higher and almost never gated.)
+  const aLp = 0.936;  // one-pole low-pass at ~7000 Hz
+  let yLp = 0, bandSumSq = 0;
+  for (let i = 0; i < filtered.length; i++) {
+    yLp = yLp + aLp * (filtered[i] - yLp);
+    bandSumSq += yLp * yLp;
   }
-  const bandFrac = Math.sqrt(bandSumSq / audio.length) / (rms + 1e-9);
-  return bandFrac >= voiceFracMin;
+  const bandFrac = bandSumSq / (sumSq + 1e-12);
+  return { pass: bandFrac >= voiceFracMin, rmsDbfs, bandFrac };
 }
 
 export class WakeWordDetector {
@@ -81,11 +88,15 @@ export class WakeWordDetector {
     // gated (silent) chunks; ingest is cheap. The gate controls only the
     // expensive STFT + model run below.
     this.preprocessor.ingest(audioChunk);
-    const gated = !energyGate(audioChunk, this.meta);
-    if (gated) {
+    // Gate on the FILTERED 1-second window (the model's actual input), like
+    // heed.infer — not the raw mic chunk, which kept sub-100 Hz rumble above
+    // the RMS floor and let the model run on near-silent ambient.
+    const g = energyGate(this.preprocessor.filteredBuffer, this.meta);
+    if (!g.pass) {
       this.ema *= 0.5;
       this.aboveCount = 0;
       return { prob: 0, ema: this.ema, triggered: false, gated: true,
+               rmsDbfs: g.rmsDbfs, bandFrac: g.bandFrac,
                latencyMs: 0, latencyPrepMs: 0, latencyInferMs: 0 };
     }
 

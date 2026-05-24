@@ -208,7 +208,15 @@
       probBar.classList.toggle("triggered", r.triggered);
       probVal.textContent = r.prob.toFixed(3);
       emaVal.textContent = r.ema.toFixed(3);
-      gateVal.textContent = r.gated ? "skipped (silence)" : "passed";
+      // Show the live energy so the gate is legible (mirrors heed listen's
+      // diagnostics): RMS of the filtered window in dBFS + the voice-band power
+      // fraction. The gate skips the model when RMS < -55 dBFS or band < 0.15.
+      const rms = (r.rmsDbfs == null || !isFinite(r.rmsDbfs))
+        ? "-∞" : r.rmsDbfs.toFixed(0);
+      const bf = r.bandFrac != null ? r.bandFrac.toFixed(2) : "-";
+      gateVal.textContent = r.gated
+        ? `skipped (${rms} dBFS, band ${bf})`
+        : `passed (${rms} dBFS, band ${bf})`;
       const lat = latencies.slice().sort((a,b)=>a-b)[Math.floor(latencies.length/2)];
       latVal.textContent = lat ? lat.toFixed(2) : "-";
       if (r.triggered) {

@@ -3,44 +3,47 @@
 // can drive frame-by-frame.
 
 import {
-  N_FFT, N_FRAMES, N_MELS, SAMPLE_RATE, StreamingPreprocessor,
+  N_FFT, N_FRAMES, N_MELS, StreamingPreprocessor,
 } from "./preprocessing.js";
 
-const VOICE_BAND_LO = 100, VOICE_BAND_HI = 7000;
-
-/** Cheap RMS + voice-band gate. Skips model invocation when audio is
- *  silent or non-speech-shaped — major power saver on always-on devices.
- *  Returns true if the gate passes (audio likely contains speech).
+/** RMS + voice-band power gate, a lightweight proxy of heed.gate (Python).
+ *  Skips the model when the audio is silent or non-speech-shaped — the power
+ *  saver on always-on devices, and the reason the Python detector stays quiet
+ *  on ambient.
+ *
+ *  Runs on the FILTERED 1-second window (post 100 Hz high-pass + 50/60 Hz
+ *  notch), exactly like heed.infer. That matters: a quiet room dominated by
+ *  sub-100 Hz rumble (HVAC, desk, handling) sits above the RMS floor on the raw
+ *  mic but drops well below it once the rumble is removed, so the model is
+ *  skipped instead of being fed near-silence ~10x a second.
+ *
+ *  Returns { pass, rmsDbfs, bandFrac } so the UI can show why a frame gated.
  */
-function energyGate(audio, meta) {
+function energyGate(filtered, meta) {
   const rmsThreshDbfs = meta.energy_gate?.rms_threshold_dbfs ?? -55.0;
   const voiceFracMin = meta.energy_gate?.voice_band_min_fraction ?? 0.15;
 
-  // RMS in dBFS
   let sumSq = 0;
-  for (let i = 0; i < audio.length; i++) sumSq += audio[i] * audio[i];
-  const rms = Math.sqrt(sumSq / audio.length);
-  if (rms < 1e-9) return false;
-  const rmsDbfs = 20 * Math.log10(rms);
-  if (rmsDbfs < rmsThreshDbfs) return false;
+  for (let i = 0; i < filtered.length; i++) sumSq += filtered[i] * filtered[i];
+  const rms = Math.sqrt(sumSq / filtered.length);
+  const rmsDbfs = rms < 1e-9 ? -Infinity : 20 * Math.log10(rms);
+  if (rmsDbfs < rmsThreshDbfs) return { pass: false, rmsDbfs, bandFrac: 0 };
 
-  // Voice-band (100-7000 Hz) energy fraction: the same idea as heed.gate, done
-  // with cheap one-pole filters instead of an FFT. A high-pass at 100 Hz drops
-  // rumble (fans, handling); a low-pass at 7000 Hz drops mic hiss; the ratio of
-  // the band-passed RMS to the full RMS approximates the spectral voice-band
-  // fraction. The upper cutoff is what stops steady fan/hiss noise from passing.
-  const aHp = 0.987;  // high-pass, exp(-2*pi*100/16000)
-  const aLp = 0.936;  // low-pass,  1 - exp(-2*pi*7000/16000)
-  let xPrev = 0, yHp = 0, yLp = 0, bandSumSq = 0;
-  for (let i = 0; i < audio.length; i++) {
-    const x = audio[i];
-    yHp = aHp * (yHp + x - xPrev);   // high-pass above 100 Hz
-    yLp = yLp + aLp * (yHp - yLp);   // low-pass below 7000 Hz
+  // Voice-band power fraction. The 100 Hz lower bound is already enforced by the
+  // biquad high-pass that produced `filtered`, so the gate only adds the 7000 Hz
+  // upper bound (a one-pole low-pass, drops mic hiss) and takes the in-band
+  // POWER fraction (band energy / total energy). This matches heed.gate's
+  // |FFT|^2 band ratio and its 0.15 threshold. The previous build divided
+  // band-RMS by full-RMS — an amplitude ratio, i.e. the square root of this —
+  // so it read far higher than 0.15 and almost never gated.
+  const aLp = 0.936;  // one-pole low-pass at ~7000 Hz: 1 - exp(-2*pi*7000/16000)
+  let yLp = 0, bandSumSq = 0;
+  for (let i = 0; i < filtered.length; i++) {
+    yLp = yLp + aLp * (filtered[i] - yLp);
     bandSumSq += yLp * yLp;
-    xPrev = x;
   }
-  const bandFrac = Math.sqrt(bandSumSq / audio.length) / (rms + 1e-9);
-  return bandFrac >= voiceFracMin;
+  const bandFrac = bandSumSq / (sumSq + 1e-12);
+  return { pass: bandFrac >= voiceFracMin, rmsDbfs, bandFrac };
 }
 
 export class WakeWordDetector {
@@ -62,10 +65,6 @@ export class WakeWordDetector {
     }
     this.threshold = meta.threshold;
     this.preprocessor = new StreamingPreprocessor();
-    // Raw 1-second ring buffer for the energy gate, so it sees the same window
-    // the model does (heed.gate runs on the full 1-s frame). Gating on the tiny
-    // per-call chunk let brief noise gusts cross the RMS threshold too easily.
-    this.gateBuffer = new Float32Array(SAMPLE_RATE);
 
     // Smoothing + hysteresis (mirrors python infer.WakeWordDetector)
     const t = meta.trigger ?? {};
@@ -80,7 +79,6 @@ export class WakeWordDetector {
 
   reset() {
     this.preprocessor.reset();
-    this.gateBuffer.fill(0);
     this.ema = 0;
     this.aboveCount = 0;
     this.lastTriggerTime = -Infinity;
@@ -92,20 +90,17 @@ export class WakeWordDetector {
     // gated (silent) chunks; ingest is cheap (O(samples)). The energy gate runs
     // on RAW audio and only controls the expensive STFT + model run below.
     this.preprocessor.ingest(audioChunk);
-    // Roll the raw chunk into the 1-second gate buffer and gate on the whole
-    // second, matching heed.gate's window (not just this ~100 ms chunk).
-    const gb = this.gateBuffer, L = gb.length, n = audioChunk.length;
-    if (n >= L) {
-      for (let i = 0; i < L; i++) gb[i] = audioChunk[n - L + i];
-    } else {
-      gb.copyWithin(0, n);
-      for (let i = 0; i < n; i++) gb[L - n + i] = audioChunk[i];
-    }
-    const gated = !energyGate(this.gateBuffer, this.meta);
-    if (gated) {
+    // Gate on the FILTERED 1-second window the preprocessor just updated (the
+    // model's actual input), exactly like heed.infer. Gating on the raw mic
+    // buffer instead let sub-100 Hz rumble hold the level above the RMS floor,
+    // so the model ran on near-silent-but-rumbly ambient and occasionally
+    // false-fired; the Python detector gates post-high-pass and stays quiet.
+    const g = energyGate(this.preprocessor.filteredBuffer, this.meta);
+    if (!g.pass) {
       this.ema *= 0.5;
       this.aboveCount = 0;
-      return { prob: 0, ema: this.ema, triggered: false, gated: true };
+      return { prob: 0, ema: this.ema, triggered: false, gated: true,
+               rmsDbfs: g.rmsDbfs, bandFrac: g.bandFrac };
     }
 
     const mel = this.preprocessor.computeMel();
@@ -140,6 +135,7 @@ export class WakeWordDetector {
       this.lastTriggerTime = now;
       this.aboveCount = 0;
     }
-    return { prob, ema: this.ema, triggered, gated: false };
+    return { prob, ema: this.ema, triggered, gated: false,
+             rmsDbfs: g.rmsDbfs, bandFrac: g.bandFrac };
   }
 }
