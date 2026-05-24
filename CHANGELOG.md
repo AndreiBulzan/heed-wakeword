@@ -4,6 +4,27 @@ All notable changes to heed are documented in this file. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-05-24
+
+### Studio
+
+- Missing TTS engines (Piper or Kokoro) now skip with a warning instead of
+  failing the whole training run, so the studio works on a fresh install before
+  the optional voices are downloaded.
+
+### Demos
+
+- The browser and React Native demos run the energy gate on the
+  high-pass-filtered window with a power-domain voice-band ratio, matching the
+  Python detector. This stops quiet, low-frequency room noise from waking the
+  model, and the browser demo shows the live RMS and band fraction.
+- Replaced the "hey fetch" example slot with a freshly trained "hey scout" model.
+
+### Docs
+
+- Added a live browser demo link, a plainer intro, and a CLI example to the README.
+- The train-your-voice Colab gained a recording guide and a score-separation plot.
+
 ## [0.1.1] - 2026-05-24
 
 ### Docs and tooling

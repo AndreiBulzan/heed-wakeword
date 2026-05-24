@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "heed-wakeword"
-version = "0.1.1"
+version = "0.1.2"
 description = "Tiny, custom, on-device wake-word detection. Train your own in seconds, deploy anywhere (Python / browser / mobile)."
 readme = "README.md"
 requires-python = ">=3.9"
