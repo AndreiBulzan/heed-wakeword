@@ -14,6 +14,13 @@
 
 FROM python:3.11-slim
 
+# Image metadata. The source label links the image to the GitHub repo on GHCR,
+# which adds the README, the source link, and version history to the package page.
+LABEL org.opencontainers.image.title="Heed Wake Word" \
+      org.opencontainers.image.description="Tiny, custom, on-device wake-word detection for Python, the browser, and mobile." \
+      org.opencontainers.image.source="https://github.com/AndreiBulzan/heed-wakeword" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
 # libsndfile backs soundfile (wav read/write). The browser captures the
 # microphone, so the server needs no other audio stack.
 RUN apt-get update \
