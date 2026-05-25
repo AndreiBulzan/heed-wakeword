@@ -1,6 +1,6 @@
 # Heed Wake Word
 
-[![PyPI](https://img.shields.io/pypi/v/heed-wakeword.svg)](https://pypi.org/project/heed-wakeword/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/LICENSE) [![CI](https://github.com/AndreiBulzan/heed-wakeword/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreiBulzan/heed-wakeword/actions/workflows/ci.yml) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb) [![Docker](https://img.shields.io/badge/Docker-self--host-2496ED?logo=docker&logoColor=white)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/docker.md)
+[![PyPI](https://img.shields.io/pypi/v/heed-wakeword.svg)](https://pypi.org/project/heed-wakeword/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/LICENSE) [![CI](https://github.com/AndreiBulzan/heed-wakeword/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreiBulzan/heed-wakeword/actions/workflows/ci.yml) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AndreiBulzan/heed-wakeword/blob/main/notebooks/heed_train_colab.ipynb) [![Docker](https://img.shields.io/badge/Docker-self--host-2496ED?logo=docker&logoColor=white)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/docker.md) [![Docs](https://img.shields.io/badge/docs-guides-informational)](https://github.com/AndreiBulzan/heed-wakeword/tree/main/docs)
 
 Train your own wake word in seconds, or grab a ready-made one, then run it
 fully on-device. The model is a 40 to 235 KB file that runs in Python, in the
@@ -233,13 +233,14 @@ synthesis during training. See the install notes for the optional
 
 ## Documentation
 
-Deeper guides for each tool live in [`docs/`](https://github.com/AndreiBulzan/heed-wakeword/tree/main/docs): the
-[studio UI](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/studio.md),
-[export and deploy](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/export-and-deploy.md),
-[Colab](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/colab.md),
-[Docker](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/docker.md),
-[mobile](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/mobile.md), and
-[browser and JS](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/browser-and-js.md).
+Full guides live in [`docs/`](https://github.com/AndreiBulzan/heed-wakeword/tree/main/docs), and `heed --help` (or `heed <command> --help`) covers the CLI:
+
+- [The studio](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/studio.md): record, train, evaluate, and export from your browser. The fastest way to a model.
+- [Export and deploy](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/export-and-deploy.md): the formats, the `wake.json` contract, sensitivity tuning, and how to run a model in Python, the browser, mobile, or native code.
+- [Train in Colab](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/colab.md): the zero-install notebook trainers on a free GPU.
+- [Self-host with Docker](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/docker.md): run the studio in a container.
+- [Mobile (iOS and Android)](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/mobile.md): the React Native demo.
+- [Browser and JavaScript](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/browser-and-js.md): the client-side reference and porting template.
 
 ## Roadmap
 

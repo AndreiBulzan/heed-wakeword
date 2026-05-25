@@ -34,6 +34,25 @@ within a tight tolerance and refuses to ship a model that fails.
 - **Smallest download**: `wake.int8.onnx`. On phone NPUs it is also lower power.
   On desktop x86 it can be slightly slower than float32, so prefer float32 there.
 
+## Tuning sensitivity without retraining
+
+`wake.json` carries the runtime behavior, so you can change how eager a model is
+by editing it, with no retraining. Every reference runtime reads these at
+inference time:
+
+- `threshold`: the main dial. Raise it to cut false triggers, lower it to catch
+  quieter or faster utterances. Genuine spoken hits usually score 0.9 or higher,
+  so there is room to raise it.
+- `trigger.consecutive_frames`: how many frames in a row must clear the threshold
+  before firing. Higher is stricter.
+- `trigger.refractory_seconds`: how long to suppress repeat triggers after one
+  fires.
+- `energy_gate`: the RMS and voice-band thresholds that skip the model on silence
+  and non-speech, the main power saver for always-on use.
+
+To change the phrase, the model size, or cross-speaker breadth you retrain; those
+are training choices, not runtime ones.
+
 ## The preprocessing chain
 
 The model consumes log-mel features, not raw audio. Apply these four steps in
