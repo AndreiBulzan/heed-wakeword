@@ -52,5 +52,5 @@
   "model_size": "medium",
   "channels": 64,
   "n_blocks": 3,
-  "tinyww_export_version": 1
+  "heed_export_version": 1
 }

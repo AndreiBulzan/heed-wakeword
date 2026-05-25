@@ -14,7 +14,7 @@ class EnergyGate:
 
     Stage 1: RMS energy threshold. Silence and very quiet audio is skipped.
     Stage 2: spectral-band fraction. The fraction of energy inside the human
-             voice band (300-3400 Hz) must exceed `voice_band_min`. This
+             voice band (100-7000 Hz) must exceed `voice_band_min`. This
              rejects pure tones, music, fan noise, and most non-speech.
 
     Both stages run on a single audio frame (~1 sec). Cost is one FFT and
@@ -24,10 +24,10 @@ class EnergyGate:
     def __init__(
         self,
         energy_dbfs: float = -55.0,
-        voice_band_min: float = 0.15,      # was 0.35 → 0.20 → 0.15
+        voice_band_min: float = 0.15,
         sample_rate: int = SAMPLE_RATE,
-        band_lo_hz: float = 100.0,         # was 300; real speech goes lower
-        band_hi_hz: float = 7000.0,        # was 3400; real speech goes higher
+        band_lo_hz: float = 100.0,         # speech energy extends below 300 Hz
+        band_hi_hz: float = 7000.0,        # and above 3400 Hz
     ) -> None:
         self.energy_threshold = 10 ** (energy_dbfs / 20.0)
         self.voice_band_min = voice_band_min

@@ -36,7 +36,7 @@ from .tts import DEFAULT_NEAR_DISTRACTOR_PHRASES, is_piper_importable, is_voice_
 
 
 def _workspace(app: Flask) -> Path:
-    return Path(app.config["TINYWW_WORKSPACE"])
+    return Path(app.config["HEED_WORKSPACE"])
 
 
 def _project_dir(app: Flask, name: str) -> Path:
@@ -160,7 +160,7 @@ def _resample_to_16k(audio: np.ndarray, src_sr: int) -> np.ndarray:
 
 def create_app(workspace: Path | None = None) -> Flask:
     app = Flask(__name__)
-    app.config["TINYWW_WORKSPACE"] = str(workspace or Path.cwd())
+    app.config["HEED_WORKSPACE"] = str(workspace or Path.cwd())
 
     # ---- HTML + assets ----
     @app.route("/")
@@ -1356,7 +1356,7 @@ def run_server(host: str = "127.0.0.1", port: int = 7777,
     import sys
     app = create_app(workspace)
     print(f"heed UI on http://{host}:{port}")
-    print(f"workspace: {app.config['TINYWW_WORKSPACE']}")
+    print(f"workspace: {app.config['HEED_WORKSPACE']}")
     print(f"python:    {sys.executable}")
     piper_ok = is_piper_importable()
     voice_ok = is_voice_available()
@@ -1626,8 +1626,7 @@ _INDEX_HTML = r"""<!doctype html>
       The TTS distractors cover other speakers' "hey X" phrases - they don't
       cover YOU breathing, YOU clicking, YOU saying "hey" to yourself, etc.
       Each item below takes 5-10 seconds. Combined: ~60 s of recording, and
-      it's the biggest single fix for the streaming false-triggers we just
-      saw in the log.
+      it's the biggest single fix for streaming false triggers.
     </p>
     <div id="hardneg-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"></div>
   </section>

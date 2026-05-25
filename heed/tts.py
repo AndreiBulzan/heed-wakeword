@@ -118,8 +118,6 @@ def phonetic_neighbor_distractors(phrase: str, *, max_neighbors: int = 30) -> li
         # "doc" alone are the most likely sources of false triggers
         # ("hey" looks like the prefix of "hey doc" with nothing after).
         # Putting them first guarantees they survive the max_neighbors cap.
-        # Bug fix 2026-05-22: previously appended last, got truncated, model
-        # never saw "hey" or "doc" alone as distractors.
         for w in parts:
             if len(w) >= 2 and w not in out:
                 out.append(w)

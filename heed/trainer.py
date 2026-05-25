@@ -88,10 +88,9 @@ class TrainerConfig:
     # Spectral envelope matching (light-weight voice conversion): apply a
     # per-frequency EQ to TTS samples that pulls their power spectrum toward
     # the user's average mic+room profile. Closes most of the synth-real gap
-    # in <1 ms per clip, no extra dependencies. Strength lowered to 0.4
-    # (was 0.6) after observing that strong matching can over-correct when
-    # the user's mic profile is unusual, pulling TTS into a domain that
-    # doesn't match deployment-time mic audio.
+    # in <1 ms per clip, no extra dependencies. Strength is 0.4: stronger
+    # matching can over-correct when the user's mic profile is unusual, pulling
+    # TTS into a domain that doesn't match deployment-time mic audio.
     spectral_matching: bool = True
     spectral_matching_strength: float = 0.4  # 0=off, 1=full eq match
     # KNN-VC: full voice conversion via WavLM. Not implemented yet - would
