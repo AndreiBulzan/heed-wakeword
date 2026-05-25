@@ -5,6 +5,8 @@ whether the model generalizes, test it live on your own voice, and export. It
 runs on your machine; the browser only uses your microphone, and no audio leaves
 the device.
 
+![The Heed studio: live testing and ONNX/TFLite export](images/studio.png)
+
 ## Launch
 
 ```bash
