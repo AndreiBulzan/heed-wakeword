@@ -4,6 +4,27 @@ All notable changes to heed are documented in this file. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.3] - 2026-05-25
+
+### Pretrained models
+
+- Retrained the four example words (hey doc, activate x, hey jarvis, hey scout)
+  with real recorded hard negatives (breathing, typing, mouth sounds, distant
+  speech, recorded neighbors, room ambient) pooled alongside the TTS data, so they
+  no longer over-trigger on everyday sound. Validated on held-out real negatives
+  (0 false triggers) and on cross-TTS Kokoro voices.
+- The four words in small, medium, and large ship as a release asset (pack).
+
+### Demos
+
+- The browser demo bundles all four words with a picker to switch between them,
+  next to the existing drop zone for loading your own model.
+
+### Internal
+
+- Removed stray development comments and finished the tinyww to heed rename in
+  code comments and config keys.
+
 ## [0.1.2] - 2026-05-24
 
 ### Studio
