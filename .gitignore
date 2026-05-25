@@ -72,6 +72,7 @@ desktop.ini
 !examples/inference_react_native/assets/slot*.onnx
 !examples/inference_react_native/assets/slot*.tflite
 !examples/inference_browser/*.onnx
+!examples/inference_browser/models/*/*.onnx
 
 # --- Downloaded TTS voice files / large model checkpoints ---
 *.npz

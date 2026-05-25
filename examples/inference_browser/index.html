@@ -59,6 +59,11 @@
     }
     .trigger-log .pulse { color: var(--trigger); font-weight: bold; }
     code { background: #21262d; padding: 0.1rem 0.4rem; border-radius: 3px; }
+  #model-picker { background: #161b22; color: var(--fg); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 10px; font: inherit; cursor: pointer; }
+  #model-picker:hover { border-color: var(--accent); }
+  #model-picker:focus { outline: none; border-color: var(--accent); }
+  #model-picker option { background: #161b22; color: var(--fg); }
   </style>
 </head>
 <body>
@@ -69,6 +74,15 @@
 
   <div class="panel">
     <p id="phrase-line">Loading model…</p>
+    <div class="row" style="margin-bottom: 0.6rem;">
+      <label for="model-picker" class="sub" style="margin-right: 0.4rem;">Wake word:</label>
+      <select id="model-picker">
+        <option value="hey doc">hey doc</option>
+        <option value="activate x">activate x</option>
+        <option value="hey jarvis">hey jarvis</option>
+        <option value="hey scout">hey scout</option>
+      </select>
+    </div>
     <div class="row">
       <button id="start-btn" disabled>Start listening</button>
       <button id="stop-btn" disabled>Stop</button>
@@ -143,10 +157,19 @@
     let workletNode = null;
     const latencies = [];
 
-    async function loadModel() {
+    // Bundled words shipped with the demo. hey doc lives at the top level; the
+    // others are under models/<word>/. The drop zone below loads any other model.
+    const BUNDLED = {
+      "hey doc": ".",
+      "activate x": "./models/activate-x",
+      "hey jarvis": "./models/hey-jarvis",
+      "hey scout": "./models/hey-scout",
+    };
+
+    async function loadModel(dir = ".", note = "bundled demo model") {
       status.textContent = "loading model…";
-      const meta = await fetch("./wake.json").then(r => r.json());
-      const sess = await ort.InferenceSession.create("./wake.onnx", {
+      const meta = await fetch(`${dir}/wake.json`).then(r => r.json());
+      const sess = await ort.InferenceSession.create(`${dir}/wake.onnx`, {
         executionProviders: ["wasm"],
       });
       detector = new WakeWordDetector(sess, meta);
@@ -155,8 +178,16 @@
       threshMarker.style.left = `${meta.threshold * 100}%`;
       startBtn.disabled = false;
       status.textContent = "model loaded; click Start";
-      modelStatus.textContent = `Active model: "${meta.phrase}" (bundled demo model)`;
+      modelStatus.textContent = `Active model: "${meta.phrase}" (${note})`;
     }
+
+    // Switch between bundled words live (works while listening too).
+    const modelPicker = document.getElementById("model-picker");
+    modelPicker.addEventListener("change", async () => {
+      const wasListening = !!audioCtx;
+      await loadModel(BUNDLED[modelPicker.value], "bundled");
+      if (wasListening) status.textContent = "listening";
+    });
 
     async function start() {
       startBtn.disabled = true;

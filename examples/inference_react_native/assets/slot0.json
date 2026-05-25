@@ -1,6 +1,6 @@
 {
   "phrase": "hey doc",
-  "threshold": 0.736,
+  "threshold": 0.667,
   "sample_rate": 16000,
   "audio_window_samples": 16000,
   "n_mels": 40,

@@ -4,8 +4,9 @@ A working in-browser wake-word detector. It doubles as the reference
 implementation of the preprocessing chain for mobile ports (Swift, Kotlin, C).
 All audio stays on-device.
 
-This folder ships with a working "hey doc" model (`wake.onnx` + `wake.json`), so
-you can serve it and try it immediately. Replace those two files to run your own.
+This folder ships with four ready-made words you can switch between in the page
+(hey doc, activate x, hey jarvis, hey scout), plus a drop zone to load your own
+`wake.onnx` + `wake.json` from `heed export`. Serve it and try it immediately.
 
 ## Quick start
 
@@ -18,7 +19,7 @@ you can serve it and try it immediately. Replace those two files to run your own
    ```
 
 2. Open `http://localhost:8000/` in any modern browser (WebAssembly plus
-   AudioWorklet). Click Start listening, allow the mic, and say "hey doc".
+   AudioWorklet). Pick a word, click Start listening, allow the mic, and say it.
 
 The page shows the live probability bar, the trigger threshold marker, and a log
 of every trigger event with timestamp and scores.

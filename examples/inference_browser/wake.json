@@ -1,6 +1,6 @@
 {
   "phrase": "hey doc",
-  "threshold": 0.729,
+  "threshold": 0.667,
   "sample_rate": 16000,
   "audio_window_samples": 16000,
   "n_mels": 40,
@@ -33,14 +33,14 @@
     },
     {
       "op": "cmn",
-      "note": "Cepstral mean normalization \u2014 subtract per-clip mean across time per mel bin. CRITICAL: model trained with CMN expects CMN'd input; omitting it makes the model wildly inaccurate."
+      "note": "Cepstral mean normalization, subtract per-clip mean across time per mel bin. CRITICAL: model trained with CMN expects CMN'd input; omitting it makes the model wildly inaccurate."
     }
   ],
   "trigger": {
     "consecutive_frames": 2,
     "refractory_seconds": 0.7,
     "ema_alpha": 0.5,
-    "note": "Trigger when raw prob > threshold for `consecutive_frames` in a row, then suppress for `refractory_seconds`. ema_alpha is for display smoothing only (not the trigger gate \u2014 the EMA lags and was suppressing short, confident detections)."
+    "note": "Trigger when raw prob > threshold for `consecutive_frames` in a row, then suppress for `refractory_seconds`. ema_alpha is for display smoothing only (not the trigger gate; the EMA lags and was suppressing short, confident detections)."
   },
   "energy_gate": {
     "rms_threshold_dbfs": -55.0,

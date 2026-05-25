@@ -52,9 +52,10 @@ pip install "heed-wakeword[ui]"   # base plus the browser studio
 heed ui                            # opens http://127.0.0.1:7777
 ```
 
-Record a few positives and negatives in the browser, press Train, then
-Live-test. A GPU is optional and gets used when present. If you prefer the
-terminal:
+The studio opens to an empty workspace (your projects live in the folder you
+launch it from), so create a project, give it a phrase, and record a few
+positives and negatives. Then press Train and Live-test. A GPU is optional and
+gets used when present. If you prefer the terminal:
 
 ```bash
 heed init my_phrase --phrase "hey computer"
@@ -120,6 +121,10 @@ The threshold, trigger, and gate live in `wake.json`, so you can change how eage
 a model is after training without retraining it. Everything else is a training
 choice. Full walkthrough in the
 [studio guide](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/studio.md).
+
+The four bundled words are ready to use without training: switch between them in
+the browser demo, in the mobile slots, or grab the full pack (all three sizes) from
+the [releases page](https://github.com/AndreiBulzan/heed-wakeword/releases).
 
 ## Deploy anywhere
 
