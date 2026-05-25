@@ -13,7 +13,7 @@ you can serve it and try it immediately. Replace those two files to run your own
    require an origin, so opening the file directly will not work):
 
    ```bash
-   cd code/examples/inference_browser
+   cd examples/inference_browser
    python -m http.server 8000
    ```
 
@@ -45,7 +45,7 @@ A `vercel.json` is included. To deploy on Vercel:
 
 ```bash
 npm i -g vercel
-cd code/examples/inference_browser
+cd examples/inference_browser
 vercel deploy --prod
 ```
 
@@ -68,37 +68,34 @@ ships as static files.
 
 ## Streaming preprocessing notes
 
-`preprocessing.js` is a port of `heed/audio.py`'s `log_mel(highpass_filter(...))`.
-Differences and trade-offs that any mobile port needs to know:
+`preprocessing.js` is a port of `heed/audio.py`'s `log_mel(highpass_filter(...))`,
+and it matches the Python reference bit-for-bit (checked in CI by
+`verify-preprocessing.mjs`). Things any mobile port needs to know:
 
-1. **HPF state carries across chunks.** The `BiquadCascade` class stores `s1` and
-   `s2` per biquad section between calls. This makes the filter behavior on
-   chunked input equivalent to filtering a continuous stream, with no edge
-   transients at chunk boundaries. The Python reference uses `sosfiltfilt`
-   (zero-phase forward-backward) on the full 1-second buffer each step; the JS
-   version uses causal `sosfilt` with state for streaming. These produce slightly
-   different low-mel-bin magnitudes (a factor of 2 in dB rolloff), absorbed by CMN
-   to within numerical noise. Tested in `verify-preprocessing.mjs`.
+1. **HPF state carries across chunks.** The `BiquadCascade` stores `s1` and `s2`
+   per biquad section between calls, so filtering chunk by chunk is identical to
+   filtering the continuous stream, with no edge transients at chunk boundaries.
+   The Python reference (`StreamingHighpass` in `heed/audio.py`) is the same causal
+   filter, which is why the two agree to about 1e-5.
 
-2. **Peak normalization is omitted.** It is mathematically a no-op under CMN:
-   scaling audio by `k` adds `2*log(k)` to every log-mel bin uniformly across
-   frames, and CMN subtracts the per-bin mean which absorbs it. Saves a buffer
-   scan per step.
+2. **Peak normalization is omitted.** It is a no-op under CMN: scaling audio by
+   `k` adds `2*log(k)` to every log-mel bin uniformly across frames, and CMN
+   subtracts the per-bin mean which absorbs it. Saves a buffer scan per step.
 
-3. **STFT uses a reference DFT (O(N^2)).** Clean and dependency-free, fast enough
-   for 10 frames per second on any laptop or modern phone (about 80K mul-adds per
-   frame). For production on slower hardware, swap in a real-input FFT library
-   (`fft.js`, `kissfft.js`); only `powerSpectrum()` in `preprocessing.js` needs to
-   change.
+3. **The STFT is a built-in radix-2 FFT.** `n_fft` is 512 (a power of two), so the
+   transform is a plain dependency-free radix-2 FFT (`fftRadix2` in
+   `preprocessing.js`), no external library needed. The streaming preprocessor also
+   recomputes only the frames new audio touched (about 14 of 101 per 100 ms chunk).
 
-4. **Mel filterbank is sparse.** About 90 percent of the 40 by 201 weights are
-   zero, so we ship a sparse representation in `filter-coeffs.js`, roughly 3 to 5
-   times faster than a dense matmul.
+4. **Mel filterbank is sparse.** Most of the 40 by 257 weights are zero (257 =
+   `n_fft`/2 + 1), so we ship a sparse representation in `filter-coeffs.js`, faster
+   than a dense matmul.
 
-5. **Energy gate runs before everything.** `wakeword.js` checks RMS and voice-band
-   fraction on the raw chunk and short-circuits when the gate fails. This is the
-   single biggest power saver on always-on devices: most of the time there is no
-   speech and the whole pipeline is skipped.
+5. **Energy gate runs before the model.** `wakeword.js` checks RMS and the
+   voice-band power fraction on the high-pass-filtered 1-second window (the same
+   window the model sees, matching `heed.gate`) and short-circuits when the gate
+   fails. This is the single biggest power saver on always-on devices: most of the
+   time there is no speech, so the whole model run is skipped.
 
 ## Mobile deployment template
 
@@ -109,7 +106,7 @@ would write in Swift, Kotlin, or C. To port:
 |---|---|---|---|
 | `Float32Array` | `[Float]` / `UnsafeMutablePointer<Float>` | `FloatArray` | `float[]` |
 | `BiquadCascade` (Direct Form II) | `Accelerate.vDSP_biquad` | `org.tensorflow.lite.support.audio` | handwritten loop |
-| `powerSpectrum()` DFT loop | `vDSP_DFT_zrop_CreateSetup` | `nayuki` FFT or kissfft port | kissfft / pocketfft |
+| `fftRadix2()` (radix-2, n_fft 512) | `vDSP_DFT_zrop_CreateSetup` | `nayuki` FFT or kissfft port | kissfft / pocketfft |
 | Sparse mel matmul | same | same | same |
 | `Math.log()` | `simd.log` | `Math.log` | `logf` |
 | ONNX session | `ORTSession` | `OrtSession` | `OrtRun` |

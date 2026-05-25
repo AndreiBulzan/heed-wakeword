@@ -68,9 +68,9 @@ is `heed`.
 
 ## What you get
 
-- **Tiny and fast.** small is about 10K params (41 KB), medium about 27K
-  (108 KB), large about 60K (235 KB). INT8 is roughly 40% of that. Model
-  inference takes 1 to 15 ms on a phone CPU.
+- **Tiny and fast.** A 41 to 235 KB model (INT8 is roughly 40% of that), with 1
+  to 15 ms inference on a phone CPU. Three sizes to pick from; see Models and
+  customization below.
 - **Many runtimes, every platform.** ONNX (fp32 and INT8) and TFLite, on
   Python, the browser (onnxruntime-web), and React Native iOS and Android.
 - **A streaming preprocessor we wrote ourselves.** A causal high-pass with
@@ -86,6 +86,40 @@ is `heed`.
 - **A permissive stack.** torch, numpy, scipy, soundfile, click, with optional
   piper-tts, kokoro-onnx, flask, and onnxruntime, all under MIT, BSD, or
   Apache-2.0. The models you train are yours to ship.
+
+## Models and customization
+
+You choose the model size at training time. All three are tiny and run the same
+way everywhere; larger means more discriminative power for harder phrases.
+
+| Size | Params | ONNX fp32 | ONNX int8 | Pick it when |
+|---|---|---|---|---|
+| small | ~10K | 41 KB | ~16 KB | tightest budget, short and distinct phrases, microcontrollers |
+| medium (default) | ~27K | 108 KB | ~41 KB | the default; best balance of accuracy and size |
+| large | ~60K | 235 KB | ~94 KB | harder phrases or maximum robustness, still under 250 KB |
+
+Inference is 1 to 15 ms per 100 ms of audio on a phone CPU at any size. Every
+model exports in three formats: ONNX float32 (the portable default), ONNX int8
+(smallest, lower power on NPUs, sometimes slightly slower on desktop x86), and
+TFLite (for the Android NNAPI and iOS Core ML delegates). See
+[Export and deploy](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/export-and-deploy.md)
+for which to use.
+
+What you can tune, and where:
+
+| Knob | What it does | Where |
+|---|---|---|
+| Phrase | the wake word itself | `heed init --phrase` or the studio |
+| Model size | small, medium, or large | `heed train --model-size` or the studio |
+| Cross-speaker breadth | synthetic speakers mixed in so it works for anyone, not just you | `--tts-pos`, `--kokoro-pos`, or the studio |
+| Sensitivity | calibrates the trigger threshold to a target false-positive rate | `heed train --target-fpr`, or edit `threshold` in `wake.json` afterward |
+| Trigger behavior | frames above threshold, refractory hold, smoothing, energy gate | the `trigger` and `energy_gate` blocks in `wake.json`, no retrain |
+| Augmentation | SpecAugment, room reverb, a noise pool, a speaker warp, all on by default | trainer flags or the studio settings |
+
+The threshold, trigger, and gate live in `wake.json`, so you can change how eager
+a model is after training without retraining it. Everything else is a training
+choice. Full walkthrough in the
+[studio guide](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/studio.md).
 
 ## Deploy anywhere
 
@@ -219,6 +253,55 @@ A few directions are interesting for later: a curated pack of speaker-independen
 phrases, more reference preprocessing ports, folding the preprocessing into the
 model graph so raw audio goes straight in, or embedded targets like TFLite-Micro.
 None of these are promised. This is a v0.1, and what runs today is the real scope.
+
+## Troubleshooting and FAQ
+
+**`heed: command not found` after installing.** The console script landed outside
+your PATH, or you installed into a different interpreter than you are running. Use
+`python -m heed.cli --help`, and install into the same Python you run
+(`python -m pip install heed-wakeword`).
+
+**Training errors about TTS or voices.** Multi-speaker TTS is optional. Install it
+and fetch the voices once: `pip install "heed-wakeword[tts,kokoro]"`, then
+`heed download-tts` and `heed download-kokoro`. Without them, just train without
+`--tts-pos`/`--kokoro-pos`; the studio skips them with a warning. `heed doctor`
+shows what is available.
+
+**It fires on everything (false triggers).** Record hard negatives in your own
+voice, especially near-misses (for "hey doc", record "hey", "hey John", "hey
+there"); the studio suggests these as phonetic neighbors. If it still over-fires
+in a noisy room, raise `threshold` in `wake.json` toward your real spoken score
+(genuine hits usually score 0.9 or higher).
+
+**It does not fire when I say it.** Usually too few or too-similar positives.
+Record 10 to 15, varied in distance, tone, and speed. Check that the threshold is
+not set above your real scores and that the mic is not muted.
+
+**It works for me but not for other people.** A model trained only on your voice is
+speaker-locked. Add `--tts-pos 400 --kokoro-pos 300` to train across hundreds of
+synthetic voices, and read the cross-speaker held-out eval before you ship.
+
+**Browser demo: the mic does nothing.** Browsers only allow mic capture over
+`https` or `localhost`. Serve the folder (`python -m http.server 8000`); do not
+open `index.html` as a file. If you just changed the model or code, hard-refresh
+to clear the cached `.js` and `.onnx`.
+
+**Mobile: "No development build installed."** The installed app's package id does
+not match, or there is no dev build on the phone yet. Build one once
+(`npx expo run:android`, or `eas build --profile development --platform ios`). On
+iOS run `eas device:create` first, or the build installs but will not open. After
+that, JS and model changes are just a Metro reload: `npx expo start --dev-client
+--clear`, no rebuild.
+
+**How do I run only inference, without torch?** Deployment needs none of the
+training stack. Ship `onnxruntime` (or `onnxruntime-web` / `-react-native`) plus
+your model and `wake.json`, and reproduce the preprocessing from `heed/audio.py`
+or `preprocessing.js`. See
+[Export and deploy](https://github.com/AndreiBulzan/heed-wakeword/blob/main/docs/export-and-deploy.md).
+
+**The PyPI page README looks out of date.** PyPI bakes the README into each release
+at build time and does not pull from GitHub, so the project page reflects the last
+published version. The GitHub README is always current.
 
 ## License
 
