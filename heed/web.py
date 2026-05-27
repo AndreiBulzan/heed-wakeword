@@ -36,12 +36,28 @@ from .tts import DEFAULT_NEAR_DISTRACTOR_PHRASES, is_piper_importable, is_voice_
 
 
 def _workspace(app: Flask) -> Path:
-    return Path(app.config["HEED_WORKSPACE"])
+    return Path(app.config["HEED_WORKSPACE"]).expanduser().resolve()
 
 
 def _project_dir(app: Flask, name: str) -> Path:
     safe = name.strip().replace("/", "_").replace("\\", "_")
-    return _workspace(app) / safe
+    safe = "".join("_" if ord(c) < 32 else c for c in safe).strip()
+    if not safe or safe in {".", ".."}:
+        safe = "_"
+    workspace = _workspace(app)
+    project = (workspace / safe).resolve()
+    if project != workspace and workspace not in project.parents:
+        raise ValueError("project path escapes workspace")
+    return project
+
+
+def _safe_child(base: Path, *parts: str) -> Path:
+    """Resolve a requested child path and ensure it remains below base."""
+    base = base.resolve()
+    candidate = base.joinpath(*parts).resolve()
+    if candidate != base and base not in candidate.parents:
+        raise ValueError("path escapes base directory")
+    return candidate
 
 
 def _project_config(project: Path) -> dict:
@@ -242,8 +258,11 @@ def create_app(workspace: Path | None = None) -> Flask:
         if kind not in ("positive", "negative"):
             return jsonify({"error": "bad kind"}), 400
         project = _project_dir(app, name)
-        clip_dir = project / kind
-        return send_from_directory(clip_dir, filename, mimetype="audio/wav")
+        try:
+            path = _safe_child(project / kind, filename)
+        except ValueError:
+            return jsonify({"error": "bad filename"}), 400
+        return send_from_directory(path.parent, path.name, mimetype="audio/wav")
 
     @app.route("/api/projects/<name>/tts_cache", methods=["GET"])
     def api_list_tts_cache(name: str):
@@ -268,13 +287,18 @@ def create_app(workspace: Path | None = None) -> Flask:
     def api_get_tts_clip(name: str, filepath: str):
         """Serve a TTS sample. `filepath` is e.g.
         'positive/tts_pos_0001.wav' or 'negative/hey_there/tts_neg_0002.wav'."""
-        if ".." in filepath or filepath.startswith("/"):
+        if filepath.startswith(("/", "\\")):
             return jsonify({"error": "bad path"}), 400
-        parts = filepath.split("/")
+        parts = filepath.replace("\\", "/").split("/")
         if not parts or parts[0] not in ("positive", "negative"):
             return jsonify({"error": "bad subkind"}), 400
+        if any(part in ("", ".", "..") for part in parts):
+            return jsonify({"error": "bad path"}), 400
         project = _project_dir(app, name)
-        full = project / "tts_cache" / filepath
+        try:
+            full = _safe_child(project / "tts_cache", *parts)
+        except ValueError:
+            return jsonify({"error": "bad path"}), 400
         if not full.exists():
             return jsonify({"error": "not found"}), 404
         return send_from_directory(full.parent, full.name, mimetype="audio/wav")
@@ -287,7 +311,10 @@ def create_app(workspace: Path | None = None) -> Flask:
         if kind not in ("positive", "negative") or not filename:
             return jsonify({"error": "kind and filename required"}), 400
         project = _project_dir(app, name)
-        path = project / kind / filename
+        try:
+            path = _safe_child(project / kind, filename)
+        except ValueError:
+            return jsonify({"error": "bad filename"}), 400
         if path.exists():
             path.unlink()
             return jsonify({"ok": True})
@@ -651,8 +678,11 @@ def create_app(workspace: Path | None = None) -> Flask:
     @app.route("/api/projects/<name>/holdout_clip/<filename>", methods=["GET"])
     def api_get_holdout_clip(name: str, filename: str):
         project = _project_dir(app, name)
-        return send_from_directory(project / "holdout_eval", filename,
-                                   mimetype="audio/wav")
+        try:
+            path = _safe_child(project / "holdout_eval", filename)
+        except ValueError:
+            return jsonify({"error": "bad filename"}), 400
+        return send_from_directory(path.parent, path.name, mimetype="audio/wav")
 
     @app.route("/api/projects/<name>/cross_tts_test", methods=["POST"])
     def api_cross_tts_test(name: str):
@@ -761,8 +791,11 @@ def create_app(workspace: Path | None = None) -> Flask:
     @app.route("/api/projects/<name>/cross_tts_clip/<filename>", methods=["GET"])
     def api_get_cross_tts_clip(name: str, filename: str):
         project = _project_dir(app, name)
-        return send_from_directory(project / "kokoro_eval", filename,
-                                   mimetype="audio/wav")
+        try:
+            path = _safe_child(project / "kokoro_eval", filename)
+        except ValueError:
+            return jsonify({"error": "bad filename"}), 400
+        return send_from_directory(path.parent, path.name, mimetype="audio/wav")
 
     @app.route("/api/projects/<name>/self_test", methods=["POST"])
     def api_self_test(name: str):
@@ -1040,14 +1073,18 @@ def create_app(workspace: Path | None = None) -> Flask:
     @app.route("/api/projects/<name>/export/download/<filename>", methods=["GET"])
     def api_export_download(name: str, filename: str):
         """Serve a single exported file as a download."""
-        if "/" in filename or "\\" in filename or ".." in filename:
+        if "/" in filename or "\\" in filename or filename in (".", ".."):
             return jsonify({"error": "bad filename"}), 400
         project = _project_dir(app, name)
         export_dir = project / "export"
-        if not (export_dir / filename).exists():
+        try:
+            path = _safe_child(export_dir, filename)
+        except ValueError:
+            return jsonify({"error": "bad filename"}), 400
+        if not path.exists():
             return jsonify({"error": "not found"}), 404
         return send_from_directory(
-            export_dir, filename,
+            path.parent, path.name,
             as_attachment=True,
         )
 
@@ -1228,8 +1265,11 @@ def create_app(workspace: Path | None = None) -> Flask:
     @app.route("/api/projects/<name>/test_take/<filename>", methods=["GET"])
     def api_get_take(name: str, filename: str):
         project = _project_dir(app, name)
-        return send_from_directory(project / "test_takes", filename,
-                                   mimetype="audio/wav")
+        try:
+            path = _safe_child(project / "test_takes", filename)
+        except ValueError:
+            return jsonify({"error": "bad filename"}), 400
+        return send_from_directory(path.parent, path.name, mimetype="audio/wav")
 
     @app.route("/api/projects/<name>/live_start", methods=["POST"])
     def api_live_start(name: str):
