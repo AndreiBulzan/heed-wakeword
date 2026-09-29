@@ -4,6 +4,16 @@ All notable changes to heed are documented in this file. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.4] - 2026-09-29
+
+### Fixed
+
+- Large training datasets no longer stack all augmented audio or extract all
+  spectrograms at once. Features are cached in CPU chunks, train/validation
+  splits share that cache, and only individual batches reach the model.
+  `--batch-size` now also bounds feature extraction and validation memory
+  ([#1](https://github.com/AndreiBulzan/heed-wakeword/issues/1)).
+
 ## [0.1.3] - 2026-05-25
 
 ### Pretrained models

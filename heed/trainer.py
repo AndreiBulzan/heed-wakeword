@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, Subset
 
 from . import N_MELS, SAMPLE_RATE, WINDOW_FRAMES
 from . import SAMPLE_RATE as _SAMPLE_RATE
@@ -195,6 +196,50 @@ def _save_clips(clips: list[torch.Tensor], target_dir: Path, prefix: str) -> Non
         save_wav(target_dir / f"{prefix}_{i:04d}.wav", clip)
 
 
+class _MelDataset(Dataset):
+    """Cache features in CPU chunks, retaining at most one batch of audio.
+
+    Keeping chunks avoids a second dataset-sized allocation to concatenate
+    features. DataLoader stacks only the samples needed for the next batch.
+    """
+
+    def __init__(self, label: float, batch_size: int) -> None:
+        if batch_size < 1:
+            raise ValueError("batch_size must be at least 1")
+        self.batch_size = batch_size
+        self.label = torch.tensor(label, dtype=torch.float32)
+        self.chunks: list[torch.Tensor] = []
+        self.pending: list[torch.Tensor] = []
+        self.n_clips = 0
+
+    def append(self, clip: torch.Tensor) -> None:
+        self.pending.append(clip)
+        self.n_clips += 1
+        if len(self.pending) == self.batch_size:
+            self._flush()
+
+    def _flush(self) -> None:
+        if self.pending:
+            with torch.no_grad():
+                self.chunks.append(log_mel(torch.stack(self.pending)))
+            self.pending.clear()
+
+    def finish(self) -> None:
+        self._flush()
+        # Apply VTLP after all waveform augmentation so batching does not
+        # change the random draws used to generate the augmented audio.
+        for chunk in self.chunks:
+            for mel in chunk:
+                mel.copy_(random_freq_warp(mel))
+
+    def __len__(self) -> int:
+        return self.n_clips
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
+        chunk, offset = divmod(index, self.batch_size)
+        return self.chunks[chunk][offset], self.label
+
+
 def _build_dataset(
     positives: list[torch.Tensor],
     negatives: list[torch.Tensor],
@@ -203,12 +248,11 @@ def _build_dataset(
     log_fn=print,
     tts_cache_dir: Path | None = None,
     rir_pool: list[torch.Tensor] | None = None,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Expand user clips with audio augmentation, return mel features + labels.
+) -> tuple[_MelDataset, _MelDataset, torch.Tensor]:
+    """Expand clips with augmentation, extracting mel features in small batches.
 
     Returns:
-        mels:   (N, n_mels, T) log-mel features
-        labels: (N,)
+        positive and negative datasets of (mel, label) pairs, cached on CPU
         speaker_prototype: (n_mels,) mean log-mel pooled over negative recordings
                           (the trainer's "voice prototype" - used by the
                           speaker-prototype regularizer).
@@ -216,8 +260,8 @@ def _build_dataset(
     rng = random.Random(cfg.seed)
     torch.manual_seed(cfg.seed)
 
-    augmented_pos: list[torch.Tensor] = []
-    augmented_neg: list[torch.Tensor] = []
+    augmented_pos = _MelDataset(label=1.0, batch_size=cfg.batch_size)
+    augmented_neg = _MelDataset(label=0.0, batch_size=cfg.batch_size)
 
     for clip in positives:
         augmented_pos.append(clip)  # always keep original (centered)
@@ -488,52 +532,48 @@ def _build_dataset(
             for clip in tts_neg:
                 augmented_neg.append(prepare_clip(clip))
 
-    # Batch all clips into one tensor for vectorized mel extraction
-    pos_batch = torch.stack(augmented_pos)  # (Np, samples)
-    neg_batch = torch.stack(augmented_neg)
-    pos_mels = log_mel(pos_batch)  # (Np, n_mels, T)
-    neg_mels = log_mel(neg_batch)
-
-    # Mel-domain VTLP warp adds further speaker variation cheaply
-    pos_mels_aug = torch.stack([random_freq_warp(m) for m in pos_mels])
-    neg_mels_aug = torch.stack([random_freq_warp(m) for m in neg_mels])
-
-    mels = torch.cat([pos_mels_aug, neg_mels_aug], dim=0)
-    labels = torch.cat(
-        [
-            torch.ones(pos_mels_aug.shape[0]),
-            torch.zeros(neg_mels_aug.shape[0]),
-        ]
-    )
+    augmented_pos.finish()
+    augmented_neg.finish()
 
     # Speaker prototype: mean across original (un-augmented) negative recordings
-    if negatives:
-        orig_neg = torch.stack(negatives)
-        orig_neg_mels = log_mel(orig_neg)
-        prototype = orig_neg_mels.mean(dim=(0, 2))  # (n_mels,)
-    else:
-        prototype = torch.zeros(N_MELS)
+    # Sum over batches and divide by the total frame count, including a short
+    # final batch. Stacking all originals can also exhaust RAM on large sets.
+    prototype = torch.zeros(N_MELS)
+    n_frames = 0
+    for start in range(0, len(negatives), cfg.batch_size):
+        orig_mels = log_mel(torch.stack(negatives[start:start + cfg.batch_size]))
+        prototype += orig_mels.sum(dim=(0, 2))
+        n_frames += orig_mels.shape[0] * orig_mels.shape[2]
+    if n_frames:
+        prototype /= n_frames
 
-    # Truncate / pad mel time-axis to a consistent WINDOW_FRAMES (defensive)
-    target_T = mels.shape[-1]
-    if target_T != WINDOW_FRAMES + 1 and target_T >= 8:
-        # MelSpectrogram with center=True returns WINDOW_FRAMES+1 - keep what we got
-        pass
-
-    return mels, labels, prototype
+    return augmented_pos, augmented_neg, prototype
 
 
-def _split(mels: torch.Tensor, labels: torch.Tensor, val_frac: float, seed: int):
-    n = mels.shape[0]
+def _split(dataset: Dataset, val_frac: float, seed: int):
+    """Split indices only, sharing the cached features between both subsets."""
+    n = len(dataset)
     g = torch.Generator().manual_seed(seed)
     idx = torch.randperm(n, generator=g)
     n_val = max(1, int(val_frac * n))
     val_idx = idx[:n_val]
     train_idx = idx[n_val:]
     return (
-        mels[train_idx], labels[train_idx],
-        mels[val_idx], labels[val_idx],
+        Subset(dataset, train_idx.tolist()),
+        Subset(dataset, val_idx.tolist()),
     )
+
+
+@torch.no_grad()
+def _validation_logits(
+    model: nn.Module, loader: DataLoader, device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Keep only scalar logits and labels from each validation batch on CPU."""
+    logits, labels = [], []
+    for x, y in loader:
+        logits.append(model(x.to(device)).cpu())
+        labels.append(y)
+    return torch.cat(logits), torch.cat(labels)
 
 
 class _FocalLoss(nn.Module):
@@ -701,7 +741,7 @@ def train_wake_word(
         # Must apply prepare_clip - parametric noise samples are 1.5s long
         # by default and the user-side negatives list expects 1s windows
         # (load_dir_clips already prepares user .wav files). Without this
-        # the downstream torch.stack(augmented_neg) blows up with mixed
+        # the downstream feature batches fail to stack clips with mixed
         # tensor sizes. Pure-zero clips intentionally remain as zeros after
         # prepare_clip; they're a valid "absolutely nothing" training anchor.
         prepared = [prepare_clip(c) for c in silence_negative_clips]
@@ -722,20 +762,20 @@ def train_wake_word(
     tts_cache_dir = Path(output_path).parent / "tts_cache"
     any_tts = (cfg.tts_positives > 0 or cfg.tts_negative_phrases
                or cfg.kokoro_positives > 0)
-    mels, labels, prototype = _build_dataset(
+    positive_data, negative_data, prototype = _build_dataset(
         positives, negatives, cfg, log_fn=log_fn,
         tts_cache_dir=tts_cache_dir if any_tts else None,
         noise_pool=noise_pool,
         rir_pool=rir_pool,
     )
-    log_fn(f"  → {int((labels==1).sum())} positive frames, "
-           f"{int((labels==0).sum())} negative frames, mel shape {tuple(mels.shape[1:])}")
+    log_fn(f"  → {len(positive_data)} positive frames, "
+           f"{len(negative_data)} negative frames, "
+           f"mel shape {tuple(positive_data[0][0].shape)}")
 
-    train_x, train_y, val_x, val_y = _split(mels, labels, cfg.val_split, cfg.seed)
-    train_x = train_x.to(device)
-    train_y = train_y.to(device)
-    val_x = val_x.to(device)
-    val_y = val_y.to(device)
+    dataset = ConcatDataset([positive_data, negative_data])
+    train_data, val_data = _split(dataset, cfg.val_split, cfg.seed)
+    train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True)
+    val_loader = DataLoader(val_data, batch_size=cfg.batch_size)
 
     size_presets = {
         "small":  {"channels": 32, "n_blocks": 3},
@@ -765,14 +805,11 @@ def train_wake_word(
 
     for epoch in range(cfg.epochs):
         model.train()
-        n = train_x.shape[0]
-        idx = torch.randperm(n)
         epoch_loss = 0.0
         n_batches = 0
-        for s in range(0, n, cfg.batch_size):
-            batch_idx = idx[s : s + cfg.batch_size]
-            x = train_x[batch_idx]
-            y = train_y[batch_idx]
+        for x, y in train_loader:
+            x = x.to(device)
+            y = y.to(device)
 
             # Speaker-prototype regularizer:
             # with prob p, push or pull the input toward the speaker prototype.
@@ -809,7 +846,7 @@ def train_wake_word(
         # validation
         model.eval()
         with torch.no_grad():
-            val_logits = model(val_x)
+            val_logits, val_y = _validation_logits(model, val_loader, device)
             val_probs = torch.sigmoid(val_logits)
             val_acc = float(((val_probs > 0.5).float() == val_y).float().mean())
             val_loss = float(loss_fn(val_logits, val_y))
@@ -826,11 +863,8 @@ def train_wake_word(
         })
 
     # Final calibration on full validation set
-    model.eval()
-    with torch.no_grad():
-        val_scores = torch.sigmoid(model(val_x)).cpu()
-    val_y_cpu = val_y.cpu()
-    threshold, tpr_at_fpr = _calibrate_threshold(val_scores, val_y_cpu, cfg.threshold_target_fpr)
+    # The last epoch already scored every validation clip in bounded batches.
+    threshold, tpr_at_fpr = _calibrate_threshold(val_probs, val_y, cfg.threshold_target_fpr)
     log_fn(f"calibrated threshold = {threshold:.3f} "
            f"(TPR={tpr_at_fpr:.2f} at FPR={cfg.threshold_target_fpr:.2f})")
 
@@ -958,8 +992,8 @@ def train_wake_word(
         val_tpr_at_target_fpr=tpr_at_fpr,
         n_positives_real=len(positives),
         n_negatives_real=len(negatives),
-        n_positives_aug=int((labels == 1).sum()),
-        n_negatives_aug=int((labels == 0).sum()),
+        n_positives_aug=len(positive_data),
+        n_negatives_aug=len(negative_data),
         n_params=n_params,
         seconds=time.time() - t0,
         tts_positives_used=cfg.tts_positives,

@@ -167,7 +167,8 @@ def record(name: str, kind: str, count: int, duration: float) -> None:
 @cli.command()
 @click.argument("name")
 @click.option("--epochs", default=35, type=int)
-@click.option("--batch-size", default=32, type=int)
+@click.option("--batch-size", default=32, type=click.IntRange(min=1),
+              help="Clips per batch for feature extraction, training, and validation.")
 @click.option("--aug-pos", default=40, type=int,
               help="Augmented copies per real positive (incl. the original).")
 @click.option("--aug-neg", default=25, type=int,

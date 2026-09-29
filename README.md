@@ -273,6 +273,20 @@ and fetch the voices once: `pip install "heed-wakeword[tts,kokoro]"`, then
 `--tts-pos`/`--kokoro-pos`; the studio skips them with a warning. `heed doctor`
 shows what is available.
 
+**Training runs out of memory on a large dataset.** The defaults generate 40
+copies per positive and 25 per negative, plus alignment and partial-phrase
+variants. With thousands of recordings, reduce those counts, for example:
+
+```bash
+heed train myword --tts-pos 0 --model-size medium --aug-pos 5 --aug-neg 1
+```
+
+Feature extraction, training, and validation use `--batch-size` (default 32).
+Lower it to reduce temporary CPU/GPU memory. Features are cached on CPU at about
+16 KB per augmented clip, so reduce `--aug-pos`/`--aug-neg` to lower the total
+cache size. Versions through 0.1.3 extract features and validate in one large
+batch; on those versions, lowering `--batch-size` alone does not fix this error.
+
 **It fires on everything (false triggers).** Record hard negatives in your own
 voice, especially near-misses (for "hey doc", record "hey", "hey John", "hey
 there"); the studio suggests these as phonetic neighbors. If it still over-fires
